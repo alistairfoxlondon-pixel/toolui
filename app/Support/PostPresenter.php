@@ -57,6 +57,7 @@ class PostPresenter
             'id' => (string) $post->id,
             'type' => $post->type,
             'title' => $post->title,
+            'seoDescription' => $post->seo_description,
             'body' => $post->body,
             'category' => $post->category,
             'launchCategory' => $post->launch_category,

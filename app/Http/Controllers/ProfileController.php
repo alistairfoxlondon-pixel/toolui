@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FriendRequest;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\UserBlock;
 use App\Support\AvatarLibrary;
 use App\Support\CoverLibrary;
 use App\Support\ImageOptimizer;
@@ -41,14 +42,14 @@ class ProfileController extends Controller
         $users = User::query()
             ->where('is_active', true)
             ->where(fn ($query) => $query->where('name', 'like', $pattern)->orWhere('username', 'like', $pattern))
-            ->withCount(['posts' => fn ($query) => $query->where('is_hidden', false)])
+            ->withCount(['posts' => fn ($query) => $query->where('type', '!=', 'model')->where('is_hidden', false)])
             ->orderBy('name')
             ->limit(6)
             ->get()
             ->map(fn (User $user) => array_merge(PostPresenter::userSummary($user), ['postsCount' => $user->posts_count]));
 
         $posts = Post::query()
-            ->where('is_hidden', false)
+            ->where('type', '!=', 'model')->where('is_hidden', false)
             ->where('type', '!=', 'repost')
             ->whereHas('author', fn ($author) => $author->where('is_active', true))
             ->where(fn ($query) => $query->where('title', 'like', $pattern)->orWhere('body', 'like', $pattern))
@@ -73,10 +74,10 @@ class ProfileController extends Controller
         $viewer = $request->user();
         $posts = Post::query()
             ->where('user_id', $profile->id)
-            ->where('is_hidden', false)
+            ->where('type', '!=', 'model')->where('is_hidden', false)
             ->where(fn ($query) => $query
                 ->where('type', '!=', 'repost')
-                ->orWhereHas('sourcePost', fn ($source) => $source->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true))))
+                ->orWhereHas('sourcePost', fn ($source) => $source->where('type', '!=', 'model')->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true))))
             ->with($this->postRelations)
             ->withCount(['comments', 'likes', 'reposts'])
             ->latest()
@@ -105,10 +106,10 @@ class ProfileController extends Controller
             'user' => array_merge(PostPresenter::userSummary($profile), [
                 'email' => $viewer && $viewer->id === $profile->id ? $profile->email : null,
                 'postsCount' => $profile->posts()
-                    ->where('is_hidden', false)
+                    ->where('type', '!=', 'model')->where('is_hidden', false)
                     ->where(fn ($query) => $query
                         ->where('type', '!=', 'repost')
-                        ->orWhereHas('sourcePost', fn ($source) => $source->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true))))
+                        ->orWhereHas('sourcePost', fn ($source) => $source->where('type', '!=', 'model')->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true))))
                     ->count(),
                 'followersCount' => $profile->followers()->count(),
                 'followingCount' => $profile->following()->count(),
@@ -121,6 +122,8 @@ class ProfileController extends Controller
                 'isSelf' => $viewer?->id === $profile->id,
                 'isFollowing' => $viewer ? $viewer->following()->where('users.id', $profile->id)->exists() : false,
                 'isFriend' => (bool) $friendship,
+                'messagingBlocked' => $viewer ? UserBlock::between($viewer->id, $profile->id) : false,
+                'blockedByMe' => $viewer ? UserBlock::where('blocker_id', $viewer->id)->where('blocked_id', $profile->id)->exists() : false,
                 'friendRequestId' => $pendingRequest?->id,
                 'friendRequestDirection' => $pendingRequest
                     ? ($pendingRequest->sender_id === $viewer?->id ? 'outgoing' : 'incoming')

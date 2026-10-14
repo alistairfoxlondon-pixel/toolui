@@ -16,6 +16,10 @@ class HomeController extends Controller
         return view('welcome', ['meta' => Seo::home()]);
     }
 
+    public function feed(): View { return $this->staticPage('feed'); }
+
+    public function editProfile(): View { return $this->staticPage('profile-edit'); }
+
     public function models(): View
     {
         return $this->staticPage('models');
@@ -80,7 +84,7 @@ class HomeController extends Controller
             'meta' => $profile
                 ? [
                     'title' => $profile->name.' (@'.$profile->username.') | VibeDock',
-                    'description' => $profile->bio ?: 'Posts, launches, and AI model shares by '.$profile->name.' on VibeDock.',
+                    'description' => $profile->bio ?: 'Posts and launches by '.$profile->name.' on VibeDock.',
                     'path' => '/u/'.$profile->username,
                 ]
                 : Seo::home(),
@@ -89,14 +93,15 @@ class HomeController extends Controller
 
     public function post(Post $post): View
     {
-        abort_if($post->is_hidden || ! $post->author?->is_active, 404);
+        abort_if($post->type === 'model' || $post->is_hidden || ! $post->author?->is_active, 404);
         $title = $post->title ?: Str::limit($post->body, 60);
 
         return view('welcome', [
+            'initialPage' => 'feed',
             'initialPostId' => (string) $post->id,
             'meta' => [
                 'title' => $title.' | VibeDock',
-                'description' => $post->body ? Str::limit($post->body, 155) : 'A community post on VibeDock.',
+                'description' => $post->seo_description ?: ($post->body ? Str::limit($post->body, 155) : 'A community post on VibeDock.'),
                 'path' => '/posts/'.$post->id,
             ],
         ]);
@@ -106,6 +111,7 @@ class HomeController extends Controller
     {
         $urls = [
             url('/'),
+            url('/feed'),
             url('/models'),
             url('/launches'),
             url('/rankings'),
@@ -117,6 +123,7 @@ class HomeController extends Controller
         ];
 
         Post::query()
+            ->where('type', '!=', 'model')
             ->where('is_hidden', false)
             ->whereHas('author', fn ($author) => $author->where('is_active', true))
             ->latest()

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#C2185B">
+    <meta name="theme-color" content="#28724F">
     <title>VibeDock Admin</title>
     @vite('resources/js/admin.js')
 </head>
@@ -33,6 +33,7 @@
             <a class="admin-brand" href="/"><svg class="admin-icon"><use href="#i-shield"/></svg> VibeDock <span>Admin</span></a>
             <p class="admin-sidebar-label">Manage</p>
             <a class="admin-sidebar-link active" href="/admin"><svg class="admin-icon"><use href="#i-monitoring"/></svg> Overview</a>
+            <a class="admin-sidebar-link" href="#models">AI model catalogue</a>
             <a class="admin-sidebar-link" href="#reports"><svg class="admin-icon"><use href="#i-flag"/></svg> Reports <span>{{ $openReportCount }}</span></a>
             <a class="admin-sidebar-link" href="#members"><svg class="admin-icon"><use href="#i-group"/></svg> Members</a>
             <a class="admin-sidebar-link" href="#posts"><svg class="admin-icon"><use href="#i-forum"/></svg> Posts and launches</a>
@@ -50,6 +51,37 @@
                 <article><span>AI models</span><strong>{{ number_format($modelCount) }}</strong><small>Model shares</small></article>
                 <article><span>Open reports</span><strong>{{ number_format($openReportCount) }}</strong><small>Needs review</small></article>
                 <article><span>Chat messages</span><strong>{{ number_format($chatMessageCount) }}</strong><small>Group chat</small></article>
+            </section>
+
+            @if ($errors->any())
+                <div class="admin-notice" role="alert">{{ $errors->first() }}</div>
+            @endif
+            <section class="admin-panel" id="models"><div class="admin-panel-heading"><div><h2>AI model catalogue</h2><p>Members rate these models for vibe coding. Only administrators add or edit entries.</p></div></div>
+                <details class="model-editor"><summary>Add a model</summary><form class="model-admin-form" method="POST" action="{{ route('admin.models.store') }}">@csrf
+                    <label>Model name<input name="name" maxlength="100" required placeholder="Exact model or version"></label>
+                    <label>Provider<input name="provider" maxlength="80" required></label>
+                    <label class="wide">Description<textarea name="description" maxlength="500" rows="2" required></textarea></label>
+                    <label class="wide">Official URL<input name="website_url" type="url" maxlength="2048" placeholder="https://"></label>
+                    <input type="hidden" name="is_active" value="1"><button class="admin-button primary">Add to catalogue</button>
+                </form></details>
+                @forelse ($aiModels as $model)
+                    <details class="model-editor"><summary>{{ $model->name }} · {{ $model->provider }} · {{ $model->ratings_count }} ratings {{ $model->is_active ? '' : '· Archived' }}</summary><form class="model-admin-form" method="POST" action="{{ route('admin.models.update', $model) }}">@csrf @method('PUT')
+                        <label>Model name<input name="name" value="{{ $model->name }}" maxlength="100" required></label><label>Provider<input name="provider" value="{{ $model->provider }}" maxlength="80" required></label>
+                        <label class="wide">Description<textarea name="description" maxlength="500" rows="2" required>{{ $model->description }}</textarea></label>
+                        <label class="wide">Official URL<input type="url" name="website_url" value="{{ $model->website_url }}" maxlength="2048"></label>
+                        <label>Status<select name="is_active"><option value="1" @selected($model->is_active)>Published</option><option value="0" @selected(!$model->is_active)>Archived</option></select></label><button class="admin-button primary">Save model</button>
+                    </form></details>
+                @empty
+                    <div class="admin-empty">Add your first model. Community ratings begin at zero.</div>
+                @endforelse
+            </section>
+
+            <section class="admin-panel" id="message-reports"><div class="admin-panel-heading"><h2>Message reports</h2><span>{{ $messageReports->count() }} open</span></div>
+                @forelse ($messageReports as $report)
+                    <article class="admin-report"><div class="admin-report-main"><strong>{{ ucfirst($report->message_type) }} · {{ $report->reason }}</strong><span>By {{ $report->reportedUser?->name ?? 'Former member' }} · reported by {{ $report->reporter?->name ?? 'Former member' }}</span><div class="admin-report-post">{{ $report->reported_body }}</div><p>{{ $report->details }}</p></div><div class="admin-report-actions"><form method="POST" action="{{ route('admin.message-reports.review', $report) }}">@csrf<input type="hidden" name="action" value="hide"><button class="admin-button danger">Hide message</button></form><form method="POST" action="{{ route('admin.message-reports.review', $report) }}">@csrf<input type="hidden" name="action" value="dismiss"><button class="admin-button">Dismiss</button></form></div></article>
+                @empty
+                    <div class="admin-empty">No message reports. Only reported private messages are shown here.</div>
+                @endforelse
             </section>
 
             <section class="admin-panel" id="reports"><div class="admin-panel-heading"><div><h2>Reports to review</h2></div><span>{{ $reports->count() }} open</span></div>

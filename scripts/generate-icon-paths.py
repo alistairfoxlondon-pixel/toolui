@@ -1,10 +1,12 @@
 """Extract Material Symbols Rounded glyph outlines as inline SVG paths."""
+from pathlib import Path
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 
-FONT = "/home/user/toolui/node_modules/material-symbols/material-symbols-rounded.woff2"
+ROOT = Path(__file__).resolve().parents[1]
+FONT = ROOT / "node_modules/material-symbols/material-symbols-rounded.woff2"
 
 # key used in our app -> Material Symbols glyph name
 ICONS = {
@@ -74,7 +76,7 @@ def js_map(data, name):
     return f"const {name} = {{\n{entries},\n}};\n\nexport {{ {name} }};\n"
 
 
-with open("/home/user/toolui/resources/js/icon-paths.js", "w") as fh:
+with open(ROOT / "resources/js/icon-paths.js", "w") as fh:
     fh.write("// Material Symbols Rounded outlines (Google, Apache-2.0), pinned at wght 400,\n")
     fh.write("// opsz 24. Inlined as SVG path data for crisp, request-free icons.\n")
     fh.write(js_map(outline, "ICON_PATHS"))

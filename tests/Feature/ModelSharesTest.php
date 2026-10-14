@@ -42,38 +42,12 @@ class ModelSharesTest extends TestCase
     }
 
     #[Test]
-    public function members_can_share_an_ai_model_with_access_metadata(): void
+    public function members_cannot_share_ai_models_as_posts(): void
     {
-        $response = $this->actingAs($this->member)->postJson('/api/posts', [
-            'type' => 'model',
-            'title' => 'Vibe 2.5 Flash',
-            'body' => 'A fast model with a generous free tier.',
-            'model_provider' => 'Google',
-            'model_access' => 'freemium',
-            'project_url' => 'https://example.com/model',
-        ]);
-
-        $response->assertCreated()->assertJsonPath('post.modelAccess', 'freemium');
-
-        $this->assertDatabaseHas('posts', [
-            'type' => 'model',
-            'model_provider' => 'Google',
-            'model_access' => 'freemium',
-        ]);
-    }
-
-    #[Test]
-    public function model_posts_reject_unknown_access_values(): void
-    {
-        $this->actingAs($this->member)
-            ->postJson('/api/posts', [
-                'type' => 'model',
-                'title' => 'Broken share',
-                'body' => 'Invalid access tier.',
-                'model_access' => 'enterprise',
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('model_access');
+        $this->actingAs($this->member)->postJson('/api/posts', [
+            'type' => 'model', 'title' => 'A model', 'body' => 'Not member-managed.',
+        ])->assertUnprocessable()->assertJsonValidationErrors('type');
+        $this->assertDatabaseMissing('posts', ['type' => 'model']);
     }
 
     #[Test]
@@ -90,7 +64,7 @@ class ModelSharesTest extends TestCase
     }
 
     #[Test]
-    public function the_feed_filters_model_posts(): void
+    public function legacy_model_posts_are_preserved_but_excluded_from_the_feed(): void
     {
         Post::create([
             'user_id' => $this->member->id,
@@ -103,8 +77,8 @@ class ModelSharesTest extends TestCase
         $response = $this->actingAs($this->member)->getJson('/api/feed?type=model');
 
         $response->assertOk();
-        $this->assertSame('model', $response->json('posts.0.type'));
-        $this->assertSame('free', $response->json('posts.0.modelAccess'));
+        $response->assertJsonCount(0, 'data');
+        $this->assertDatabaseHas('posts', ['type' => 'model']);
     }
 
     #[Test]

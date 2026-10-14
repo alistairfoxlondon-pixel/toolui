@@ -5,6 +5,22 @@ namespace App\Support;
 final class AvatarLibrary
 {
     public const CHOICES = [
+        'orbit-ollie' => 'Orbit Ollie',
+        'captain-commit' => 'Captain Commit',
+        'byte-bard' => 'Byte Bard',
+        'agent-loop' => 'Agent Loop',
+        'professor-patch' => 'Professor Patch',
+        'noodle-ninja' => 'Noodle Ninja',
+        'nova-nomad' => 'Nova Nomad',
+        'pixel-fox' => 'Pixel Fox',
+        'dino-debug' => 'Dino Debug',
+        'sir-ships' => 'Sir Ships-a-lot',
+        'bean-bandit' => 'Bean Bandit',
+        'bug-buddy' => 'Bug Buddy',
+        'robo-ravi' => 'Robo Ravi',
+        'disco-duck' => 'Disco Duck',
+        'cloud-kid' => 'Cloud Kid',
+        'spook-exe' => 'Spook.exe',
         'neutral' => 'Neutral',
         'female-rose' => 'Woman in rose',
         'female-violet' => 'Woman in violet',
