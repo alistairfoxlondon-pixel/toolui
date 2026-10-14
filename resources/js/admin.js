@@ -1,2 +1,2 @@
-import '../css/app.css';
+import '@fontsource-variable/figtree/wght.css';
 import '../css/admin.css';

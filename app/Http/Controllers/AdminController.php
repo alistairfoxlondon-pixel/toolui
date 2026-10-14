@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comment;
 use App\Models\CommunityChatMessage;
 use App\Models\Post;
 use App\Models\PostReport;
@@ -20,6 +21,8 @@ class AdminController extends Controller
             'activeMemberCount' => User::where('is_active', true)->count(),
             'postCount' => Post::count(),
             'launchCount' => Post::where('type', 'launch')->count(),
+            'modelCount' => Post::where('type', 'model')->count(),
+            'commentCount' => Comment::count(),
             'openReportCount' => PostReport::where('status', 'open')->count(),
             'chatMessageCount' => CommunityChatMessage::count(),
             'chatMessages' => CommunityChatMessage::with('user:id,name,username')
@@ -33,6 +36,10 @@ class AdminController extends Controller
                 ->get(),
             'users' => User::latest()->limit(40)->get(),
             'posts' => Post::with('author')->latest()->limit(30)->get(),
+            'comments' => Comment::with(['author:id,name,username', 'post:id,title,body,is_hidden'])
+                ->latest()
+                ->limit(30)
+                ->get(),
         ]);
     }
 
@@ -45,6 +52,15 @@ class AdminController extends Controller
         return back()->with('status', $post->is_hidden ? 'Post hidden from the community.' : 'Post restored to the community.');
     }
 
+    public function setPostFeatured(Request $request, Post $post): RedirectResponse
+    {
+        $data = $request->validate(['is_featured' => ['required', 'boolean']]);
+        $post->is_featured = (bool) $data['is_featured'];
+        $post->save();
+
+        return back()->with('status', $post->is_featured ? 'Post marked as a community pick.' : 'Community pick removed.');
+    }
+
     public function deletePost(Post $post): RedirectResponse
     {
         foreach ([$post->image_path, $post->logo_path] as $path) {
@@ -53,6 +69,13 @@ class AdminController extends Controller
         $post->delete();
 
         return back()->with('status', 'Post removed.');
+    }
+
+    public function deleteComment(Comment $comment): RedirectResponse
+    {
+        $comment->delete();
+
+        return back()->with('status', 'Comment removed.');
     }
 
     public function setUserStatus(Request $request, User $user): RedirectResponse

@@ -3,19 +3,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#4c5cda">
+    <meta name="theme-color" content="#C2185B">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="A welcoming community for people who make AI tools, apps, and creative projects.">
-    <title>VibeDock | Build together</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    @vite('resources/js/app.js')
-</head>
-<body>
-    <a class="skip-link" href="#app">Skip to content</a>
-    <div id="app" tabindex="-1"></div>
     @php
-        $initialPage = match (true) {
+        $meta = $meta ?? ['title' => 'VibeDock | Build together', 'description' => 'A community for vibe coders and makers who build AI tools, apps, and creative projects.', 'path' => '/'];
+        $canonical = url($meta['path']);
+        $initialPage = $initialPage ?? match (true) {
             request()->is('launches') => 'launches',
+            request()->is('models') => 'models',
             request()->is('rankings') => 'rankings',
             request()->is('community-chat') => 'community-chat',
             request()->is('messages') => 'messages',
@@ -27,6 +22,34 @@
             default => 'home',
         };
     @endphp
+    <title>{{ $meta['title'] }}</title>
+    <meta name="description" content="{{ $meta['description'] }}">
+    <link rel="canonical" href="{{ $canonical }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="VibeDock">
+    <meta property="og:title" content="{{ $meta['title'] }}">
+    <meta property="og:description" content="{{ $meta['description'] }}">
+    <meta property="og:url" content="{{ $canonical }}">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{{ $meta['title'] }}">
+    <meta name="twitter:description" content="{{ $meta['description'] }}">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    @vite('resources/js/app.js')
+    @if ($initialPage === 'home' && $meta['path'] === '/')
+        <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "VibeDock",
+            "url": {{ json_encode(url('/')) }},
+            "description": {{ json_encode($meta['description']) }}
+        }
+        </script>
+    @endif
+</head>
+<body>
+    <a class="skip-link" href="#app">Skip to content</a>
+    <div id="app" tabindex="-1"></div>
     <script>
         window.VibeDockConfig = {
             apiEnabled: true,
@@ -39,6 +62,7 @@
                 'profession' => auth()->user()->profession,
                 'skills' => auth()->user()->skills ?? [],
                 'avatarChoice' => auth()->user()->avatar_choice,
+                'coverChoice' => \App\Support\CoverLibrary::valid(auth()->user()->cover_choice),
                 'avatarUploaded' => (bool) auth()->user()->avatar_path,
                 'avatarUrl' => auth()->user()->avatar_path ? Storage::disk('public')->url(auth()->user()->avatar_path) : asset('avatars/'.(auth()->user()->avatar_choice ?: 'neutral').'.svg'),
                 'isAdmin' => (bool) auth()->user()->is_admin,

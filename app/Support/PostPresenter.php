@@ -60,6 +60,8 @@ class PostPresenter
             'body' => $post->body,
             'category' => $post->category,
             'launchCategory' => $post->launch_category,
+            'modelProvider' => $post->model_provider,
+            'modelAccess' => $post->model_access,
             'projectUrl' => $post->project_url,
             'imageUrl' => $post->image_path ? Storage::disk('public')->url($post->image_path) : null,
             'logoUrl' => $post->logo_path ? Storage::disk('public')->url($post->logo_path) : null,
@@ -82,6 +84,7 @@ class PostPresenter
             'launchVote' => $myLaunchVote,
             'sourcePost' => $source,
             'isHidden' => (bool) $post->is_hidden,
+            'isFeatured' => (bool) $post->is_featured,
         ];
     }
 
@@ -96,6 +99,7 @@ class PostPresenter
             'skills' => $user->skills ?? [],
             'website' => $user->website,
             'avatarChoice' => $user->avatar_choice ?: 'neutral',
+            'coverChoice' => CoverLibrary::valid($user->cover_choice),
             'avatarUploaded' => (bool) $user->avatar_path,
             'avatarUrl' => $user->avatar_path
                 ? Storage::disk('public')->url($user->avatar_path)

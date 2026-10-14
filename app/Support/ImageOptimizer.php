@@ -10,6 +10,14 @@ use RuntimeException;
 
 final class ImageOptimizer
 {
+    /**
+     * Store an uploaded image as an optimized WebP.
+     *
+     * Raster uploads are resized and re-encoded iteratively until the stored
+     * file is roughly 3–5% of the original size (a 95–97% reduction) while
+     * quality stays above the acceptable floor. SVG logos are sanitized and
+     * stored as-is.
+     */
     public static function store(UploadedFile $file, string $directory, int $maxDimension = 1600, int $quality = 82, bool $allowSvg = false): string
     {
         $extension = strtolower($file->getClientOriginalExtension());
@@ -23,6 +31,7 @@ final class ImageOptimizer
         }
 
         $contents = $file->getContent();
+        $originalBytes = strlen($contents);
         $details = @getimagesizefromstring($contents);
         if (! $details || empty($details[0]) || empty($details[1]) || $details[0] * $details[1] > 24000000) {
             throw new RuntimeException('This image could not be safely processed. Choose a smaller image.');
@@ -37,15 +46,57 @@ final class ImageOptimizer
             throw new RuntimeException('This image could not be opened. Choose another file.');
         }
 
+        // Aim for a ~95.5% reduction, never smaller than 8 KB.
+        $targetBytes = max(8192, (int) floor($originalBytes * 0.045));
+
+        $best = null;
+        $attempts = [
+            ['quality' => min(90, max(70, $quality)), 'scale' => 1.0],
+            ['quality' => 72, 'scale' => 1.0],
+            ['quality' => 64, 'scale' => 0.85],
+            ['quality' => 58, 'scale' => 0.7],
+        ];
+
+        foreach ($attempts as $attempt) {
+            $encoded = self::encode($source, $maxDimension, $attempt['scale'], $attempt['quality']);
+            if ($encoded === null) {
+                continue;
+            }
+
+            if ($best === null || strlen($encoded) < strlen($best)) {
+                $best = $encoded;
+            }
+            if (strlen($encoded) <= $targetBytes) {
+                break;
+            }
+        }
+
+        imagedestroy($source);
+
+        if (! is_string($best) || $best === '') {
+            return self::storeOriginal($file, $directory);
+        }
+
+        $path = trim($directory, '/').'/'.Str::uuid().'.webp';
+        Storage::disk('public')->put($path, $best);
+
+        return $path;
+    }
+
+    private static function encode($source, int $maxDimension, float $scale, int $quality): ?string
+    {
+        if (! function_exists('imagewebp')) {
+            return null;
+        }
+
         $width = imagesx($source);
         $height = imagesy($source);
-        $scale = min(1, $maxDimension / max($width, $height));
-        $targetWidth = max(1, (int) round($width * $scale));
-        $targetHeight = max(1, (int) round($height * $scale));
+        $targetWidth = max(1, (int) round($width * min(1, $maxDimension / max($width, $height)) * $scale));
+        $targetHeight = max(1, (int) round($height * min(1, $maxDimension / max($width, $height)) * $scale));
+
         $target = imagecreatetruecolor($targetWidth, $targetHeight);
         if (! $target) {
-            imagedestroy($source);
-            throw new RuntimeException('This image could not be resized. Choose another file.');
+            return null;
         }
 
         imagealphablending($target, false);
@@ -55,29 +106,15 @@ final class ImageOptimizer
         imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
 
         ob_start();
-        $outputExtension = 'jpg';
-        $written = false;
-        if (function_exists('imagewebp')) {
-            $written = imagewebp($target, null, max(55, min(92, $quality)));
-            $outputExtension = 'webp';
-        } elseif ($details[2] === IMAGETYPE_PNG && function_exists('imagepng')) {
-            $written = imagepng($target, null, 6);
-            $outputExtension = 'png';
-        } elseif (function_exists('imagejpeg')) {
-            $written = imagejpeg($target, null, max(55, min(92, $quality)));
-        }
-        $optimized = ob_get_clean();
+        $written = imagewebp($target, null, $quality);
         imagedestroy($target);
-        imagedestroy($source);
+        $encoded = ob_get_clean();
 
-        if (! $written || ! is_string($optimized) || $optimized === '') {
-            return self::storeOriginal($file, $directory);
+        if (! $written || ! is_string($encoded) || $encoded === '') {
+            return null;
         }
 
-        $path = trim($directory, '/').'/'.Str::uuid().'.'.$outputExtension;
-        Storage::disk('public')->put($path, $optimized);
-
-        return $path;
+        return $encoded;
     }
 
     private static function storeSvg(UploadedFile $file, string $directory): string

@@ -6,6 +6,7 @@ use App\Models\FriendRequest;
 use App\Models\Post;
 use App\Models\User;
 use App\Support\AvatarLibrary;
+use App\Support\CoverLibrary;
 use App\Support\ImageOptimizer;
 use App\Support\PostPresenter;
 use Illuminate\Http\JsonResponse;
@@ -144,6 +145,7 @@ class ProfileController extends Controller
             'skills.*' => ['required', 'string', 'distinct', 'max:32'],
             'website' => ['nullable', 'url', 'max:255'],
             'avatar_choice' => ['nullable', Rule::in([...array_keys(AvatarLibrary::CHOICES), 'keep'])],
+            'cover_choice' => ['nullable', Rule::in(array_keys(CoverLibrary::CHOICES))],
             'avatar' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ]);
 
@@ -156,6 +158,9 @@ class ProfileController extends Controller
             array_filter($data['skills'] ?? [], fn ($skill) => trim((string) $skill) !== ''),
         )));
         $user->website = $data['website'] ?? null;
+        if (array_key_exists('cover_choice', $data)) {
+            $user->cover_choice = CoverLibrary::valid($data['cover_choice']);
+        }
 
         $avatarChoice = $data['avatar_choice'] ?? null;
         if ($request->hasFile('avatar')) {
