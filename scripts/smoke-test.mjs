@@ -305,9 +305,7 @@ check('skills start compact without a scrollbox', $$('.skill-option:not([hidden]
 click($('[data-action="expand-skills"]'));
 check('all skills can be expanded', $$('.skill-option:not([hidden])').length === 80);
 click($('[data-action="expand-skills"]'));
-check('avatar cast starts compact', $$('[data-avatar-group]:not([hidden]) .avatar-choice:not([hidden])').length < 10);
-click($('[data-action="expand-avatars"]'));
-check('all 12 licensed 3D characters can be expanded', $$('[data-avatar-group]:not([hidden]) .avatar-choice:not([hidden])').length === 12);
+check('avatar collection opens with eight illustrated makers', $$('[data-avatar-group]:not([hidden]) .avatar-choice').length === 8);
 click($('.skill-option[data-skill="React"]'));
 check('skill selection updates profile field', /React/.test($('input[name="skills"]').value) && $('.skill-option[data-skill="React"]').getAttribute('aria-pressed') === 'true');
 type($('[data-skill-search]'), 'Python');
@@ -317,11 +315,11 @@ check('skill search has helpful empty state', !$('.skill-empty').hidden);
 type($('[data-skill-search]'), '');
 check('cover picker lists 8 choices', $$('.cover-choice').length === 8);
 check('cover swatch classes emitted', $$('.cover-swatch-sunset, .cover-swatch-grape, .cover-swatch-ocean').length >= 3);
-check('avatar picker has 24 choices in separate groups', $$('.avatar-choice').length === 24 && $$('[data-avatar-group]').length === 3);
-click($('[data-action="avatar-group"][data-group="Female"]'));
-check('female group contains six portraits', $$('[data-avatar-group="Female"] img').length === 6 && $('[data-avatar-group="Male"]').hidden);
-click($('[data-action="avatar-group"][data-group="Male"]'));
-check('male group contains six portraits', $$('[data-avatar-group="Male"] img').length === 6 && $('[data-avatar-group="Female"]').hidden);
+check('avatar picker has 24 choices in three collections', $$('.avatar-choice').length === 24 && $$('[data-avatar-group]').length === 3);
+click($('[data-action="avatar-group"][data-group="Creatures"]'));
+check('creatures collection contains eight illustrations', $$('[data-avatar-group="Creatures"] img').length === 8 && $('[data-avatar-group="Makers"]').hidden);
+click($('[data-action="avatar-group"][data-group="Makers"]'));
+check('makers collection contains eight illustrations', $$('[data-avatar-group="Makers"] img').length === 8 && $('[data-avatar-group="Creatures"]').hidden);
 check('avatar picker offers random', /random/i.test($('.profile-edit-page').textContent));
 const coverChoice = $$('.cover-choice')[2];
 if (coverChoice) {

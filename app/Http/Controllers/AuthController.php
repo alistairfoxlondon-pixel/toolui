@@ -22,7 +22,7 @@ class AuthController extends Controller
         ]);
 
         $data['username'] = Str::lower($data['username']);
-        $user = User::create(array_merge($data, ['avatar_choice' => 'fluent-astronaut']));
+        $user = User::create(array_merge($data, ['avatar_choice' => 'orbit-ollie']));
         Auth::login($user);
         $request->session()->regenerate();
 

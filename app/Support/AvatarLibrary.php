@@ -74,9 +74,9 @@ final class AvatarLibrary
 
     public static function url(?string $choice): string
     {
-        $key = array_key_exists((string) $choice, self::CHOICES) ? $choice : 'fluent-robot';
+        $key = array_key_exists((string) $choice, self::CHOICES) ? $choice : 'robo-ravi';
 
-        // Retire old artwork without invalidating saved profile choices.
+        // Map retired portrait identifiers to the current illustrated avatar library.
         static $aliases;
         $aliases ??= json_decode(file_get_contents(resource_path('data/avatar-aliases.json')), true, flags: JSON_THROW_ON_ERROR);
         $key = $aliases[$key] ?? $key;
@@ -84,6 +84,6 @@ final class AvatarLibrary
         static $assets;
         $assets ??= json_decode(file_get_contents(resource_path('data/avatar-assets.json')), true, flags: JSON_THROW_ON_ERROR);
 
-        return asset(ltrim(($assets[$key] ?? $assets['fluent-robot'])['small'], '/'));
+        return asset(ltrim(($assets[$key] ?? $assets['robo-ravi'])['small'], '/'));
     }
 }

@@ -71,7 +71,7 @@ const seedPosts = [
         title: 'I finally shared my first draft',
         body: 'Posted the rough version instead of polishing forever. The feedback that afternoon was worth it.',
         authorName: 'Maya Chen',
-        author: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/fluent-fox.png' },
+        author: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/pixel-fox.svg' },
         role: 'Product designer',
         tone: 'tone-coral',
         createdAt: '38 min ago',
@@ -88,7 +88,7 @@ const seedPosts = [
         title: 'Goodside, a slower kind of city guide',
         body: 'A small guide to independent places in your neighborhood.',
         authorName: 'Ravi Patel',
-        author: { id: 'demo-ravipatel', name: 'Ravi Patel', username: 'ravipatel', avatarUrl: '/avatars/fluent-robot.png' },
+        author: { id: 'demo-ravipatel', name: 'Ravi Patel', username: 'ravipatel', avatarUrl: '/avatars/robo-ravi.svg' },
         role: 'Weekend maker',
         tone: 'tone-mint',
         createdAt: '2 hours ago',
@@ -111,7 +111,7 @@ const seedPosts = [
         title: 'How do you keep an AI-generated codebase maintainable?',
         body: 'I’m trying smaller prompts and tests before each change. What works for you?',
         authorName: 'Priya Rahman',
-        author: { id: 'demo-priyar', name: 'Priya Rahman', username: 'priyar', avatarUrl: '/avatars/fluent-owl.png' },
+        author: { id: 'demo-priyar', name: 'Priya Rahman', username: 'priyar', avatarUrl: '/avatars/byte-bard.svg' },
         role: 'AI engineer',
         tone: 'tone-lilac',
         createdAt: '3 hours ago',
@@ -131,7 +131,7 @@ const seedPosts = [
         title: 'What takes the most energy when you start?',
         body: '',
         authorName: 'Noah Williams',
-        author: { id: 'demo-noahbuilds', name: 'Noah Williams', username: 'noahbuilds', avatarUrl: '/avatars/fluent-astronaut.png' },
+        author: { id: 'demo-noahbuilds', name: 'Noah Williams', username: 'noahbuilds', avatarUrl: '/avatars/orbit-ollie.svg' },
         role: 'Creative technologist',
         tone: 'tone-sky',
         createdAt: '4 hours ago',
@@ -151,7 +151,7 @@ const seedPosts = [
         title: 'One small build, one useful lesson',
         body: 'A smaller scope and a real deadline helped me finish. What helped you ship this week?',
         authorName: 'Ken Alvarez',
-        author: { id: 'demo-kena', name: 'Ken Alvarez', username: 'kenalvarez', avatarUrl: '/avatars/fluent-ninja.png' },
+        author: { id: 'demo-kena', name: 'Ken Alvarez', username: 'kenalvarez', avatarUrl: '/avatars/noodle-ninja.svg' },
         role: 'Full stack dev',
         tone: 'tone-indigo',
         createdAt: '6 hours ago',
@@ -265,7 +265,7 @@ const state = {
     conversations: [],
     conversationsLoaded: false,
     selectedMessageUser: null,
-    groupMessages: apiEnabled ? [] : readStorage('vibedock-preview-chat', [{ id: 1, body: 'Welcome to the community chat.', sentByMe: false, createdAt: 'today', user: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/fluent-unicorn.png' } }]),
+    groupMessages: apiEnabled ? [] : readStorage('vibedock-preview-chat', [{ id: 1, body: 'Welcome to the community chat.', sentByMe: false, createdAt: 'today', user: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/neon-gecko.svg' } }]),
     groupChatLoaded: false,
     groupChatLoading: false,
     groupChatTimer: null,
@@ -501,7 +501,7 @@ function renderLanding() {
         <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/feed?filter=poll" data-action="filter" data-filter="poll">${icon('bar_chart',20)} Ask the community</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
         <section class="feature-grid" aria-label="What you can do on VibeDock">
             <article class="feature-card feature-launch"><div class="feature-copy"><span class="feature-number">01 / LAUNCH</span><h3>Your side project. <br>Its first supporters.</h3><p>Launch your build. Find its first fans. Claim a home for your brand.</p><a class="feature-link" href="/launches" data-action="go-page" data-page="launches">Explore launches ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/launch-studio.svg" alt="An app taking shape in a maker’s launch studio" width="640" height="460" loading="lazy" decoding="async"></div></article>
-            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="${avatarPath('fluent-astronaut', 'large')}" alt="3D astronaut avatar" width="140" height="140" loading="lazy"><img src="${avatarPath('fluent-owl', 'large')}" alt="3D owl avatar" width="120" height="120" loading="lazy"><img src="${avatarPath('fluent-cat-face', 'large')}" alt="3D cat avatar" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
+            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="${avatarPath('orbit-ollie', 'large')}" alt="Orbit Ollie illustrated avatar" width="140" height="140" loading="lazy"><img src="${avatarPath('byte-bard', 'large')}" alt="Byte Bard illustrated avatar" width="120" height="120" loading="lazy"><img src="${avatarPath('cosmic-cat', 'large')}" alt="Cosmic Cat illustrated avatar" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
             <article class="feature-card feature-badges"><div class="feature-copy"><span class="feature-number">03 / BELONG</span><h3>A little activity.<br>A lot to show.</h3><p>Share, help, and launch. Earn badges along the way.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">Meet your milestones ${icon('arrow_forward',18)}</a></div><div class="feature-art badge-scene"><span class="display-badge">${icon('rocket_launch',48)}</span><span class="display-badge">${icon('favorite',36)}</span><span class="display-badge">${icon('auto_awesome',36)}</span><small>Made of small wins.</small></div></article>
             <article class="feature-card feature-feedback"><div class="feature-copy"><span class="feature-number">04 / LEARN</span><h3>Less guesswork. <br>More “aha”.</h3><p>Show your progress. Ask the tricky question. Run a poll and let real opinions shape your next move.</p><a class="feature-link" href="/feed" data-action="go-page" data-page="feed">Join the conversation ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/feedback-board.svg" alt="An illustrated community poll and conversation bubble" width="440" height="340" loading="lazy" decoding="async"></div></article>
         </section>
@@ -606,12 +606,13 @@ const REACTION_OPTIONS = [
     { key: 'love', label: 'Love', action: 'like' },
     ...REACTIONS.map(reaction => ({ ...reaction, action: 'react' })),
 ];
+// Familiar Material Symbols keep the reaction language precise, legible and consistent.
 const REACTION_ICON_NAMES = {
-    love: 'reaction_love', celebrate: 'reaction_celebrate', helpful: 'reaction_helpful',
-    support: 'reaction_support', laugh: 'reaction_laugh', wow: 'reaction_wow',
+    love: 'favorite', celebrate: 'celebration', helpful: 'thumb_up',
+    support: 'volunteer_activism', laugh: 'sentiment_very_satisfied', wow: 'auto_awesome',
 };
-function reactionIcon(key, size = 20) {
-    return icon(REACTION_ICON_NAMES[key] || 'add_reaction', size, 'reaction-icon');
+function reactionIcon(key, size = 20, filled = false) {
+    return icon(REACTION_ICON_NAMES[key] || 'add_reaction', size, 'reaction-icon', filled && ['love', 'helpful'].includes(key));
 }
 function renderReactions(post, viewId = post.id) {
     const counts = post.reactions || {};
@@ -621,11 +622,11 @@ function renderReactions(post, viewId = post.id) {
     const pickerId = `reaction-picker-${encodeURIComponent(String(viewId))}`;
     const total = Number(post.likes || 0) + REACTIONS.reduce((sum, option) => sum + Number(counts[option.key] || 0), 0);
     const triggerLabel = selected ? `Change reaction, current ${selected.label}` : 'Choose a reaction';
-    return `<div class="post-reactions reaction-control" data-reaction-view-id="${escapeHtml(viewId)}"><button class="post-action reaction-trigger ${selected ? 'is-selected' : ''}" data-action="toggle-reactions" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}" aria-expanded="${pickerOpen}" aria-haspopup="true" aria-controls="${pickerId}" aria-label="${pickerOpen ? 'Close reaction options' : triggerLabel}">${reactionIcon(selected?.key || 'add_reaction')}<span class="post-utility-label">React</span><span class="reaction-count">${total || ''}</span></button>${pickerOpen ? `<div class="reaction-picker" id="${pickerId}" role="group" aria-label="Choose a reaction">${REACTION_OPTIONS.map((option) => {
+    return `<div class="post-reactions reaction-control" data-reaction-view-id="${escapeHtml(viewId)}"><button class="post-action reaction-trigger ${selected ? `is-selected reaction-${selected.key}` : ''}" data-action="toggle-reactions" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}" aria-expanded="${pickerOpen}" aria-haspopup="true" aria-controls="${pickerId}" aria-label="${pickerOpen ? 'Close reaction options' : triggerLabel}">${reactionIcon(selected?.key || 'add_reaction', 20, Boolean(selected))}<span class="post-utility-label">React</span><span class="reaction-count">${total || ''}</span></button>${pickerOpen ? `<div class="reaction-picker" id="${pickerId}" role="group" aria-label="Choose a reaction"><p class="reaction-picker-heading">React to this post</p><div class="reaction-choice-grid">${REACTION_OPTIONS.map((option) => {
         const isSelected = option.key === 'love' ? Boolean(post.liked) : post.myReaction === option.key;
         const actionAttributes = option.action === 'react' ? ` data-reaction="${option.key}"` : '';
-        return `<button class="reaction-choice ${isSelected ? 'is-selected' : ''}" data-action="${option.action}" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}"${actionAttributes} aria-pressed="${isSelected}" aria-label="${isSelected ? `Remove ${option.label.toLowerCase()}` : `React with ${option.label.toLowerCase()}`}" title="${option.label}">${reactionIcon(option.key, 22)}<span class="visually-hidden">${escapeHtml(option.label)}</span></button>`;
-    }).join('')}</div>` : ''}</div>`;
+        return `<button class="reaction-choice reaction-${option.key} ${isSelected ? 'is-selected' : ''}" data-action="${option.action}" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}"${actionAttributes} aria-pressed="${isSelected}" aria-label="${isSelected ? `Remove ${option.label.toLowerCase()}` : `React with ${option.label.toLowerCase()}`}"><span class="reaction-choice-icon">${reactionIcon(option.key, 21, isSelected)}</span><span class="reaction-choice-label">${escapeHtml(option.label)}</span></button>`;
+    }).join('')}</div></div>` : ''}</div>`;
 }
 
 function renderPost(post) {
@@ -903,7 +904,7 @@ function renderGuidePage() {
         ['question','chat_bubble','Ask a question','Get a fresh perspective from fellow makers.'],
         ['poll','bar_chart','Run a poll','Compare AI models or get feedback on your next idea.'],
         ['launch','rocket_launch','Launch a project','A dedicated home for your build and your brand.'],
-    ].map(([type,glyph,title,body]) => `<a class="help-feature" href="/create/${type}" data-action="open-compose" data-type="${type === 'post' ? 'discussion' : type}">${icon(glyph,28)}<h2>${title}</h2><p>${body}</p><span>Get started →</span></a>`).join('')}</div><section class="guide-faq"><h2>A few useful answers</h2><details open><summary>How do brand claims and green ticks work?</summary><p>Add a unique brand handle when you launch and confirm you’re authorized to represent it. Your handle is reserved when the launch is published. An administrator reviews ownership before granting the green “Verified business” tick. Claims aren’t trademark registration, and verification isn’t an endorsement. An admin can revoke verification.</p></details><details><summary>How can I earn a badge?</summary><p>Share posts, launch projects, start polls, or join conversations. Activity badges appear on your profile automatically; admins can also award special recognition.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">View all badges →</a></details><details><summary>Can I sign in with Google or Facebook?</summary><p>Yes, on the live site once social sign-in is configured. Use “Continue with Google” or “Continue with Facebook” on either sign-in or registration. Email sign-in is always available. The standalone demo cannot connect to these providers.</p></details><details><summary>Where can I change my avatar?</summary><p>Open your profile, choose Edit profile, and select a 3D character or upload your own photo. Our character library uses Microsoft Fluent Emoji artwork under the MIT license.</p></details><details><summary>How do I report an issue or unsafe content?</summary><p>Use the post’s More options menu or the message’s options to report content to the site team. You can also block members. Never share account credentials or private API keys in posts.</p><a class="feature-link" href="/guidelines" data-action="go-page" data-page="guidelines">Read the guidelines →</a></details></section></main>`;
+    ].map(([type,glyph,title,body]) => `<a class="help-feature" href="/create/${type}" data-action="open-compose" data-type="${type === 'post' ? 'discussion' : type}">${icon(glyph,28)}<h2>${title}</h2><p>${body}</p><span>Get started →</span></a>`).join('')}</div><section class="guide-faq"><h2>A few useful answers</h2><details open><summary>How do brand claims and green ticks work?</summary><p>Add a unique brand handle when you launch and confirm you’re authorized to represent it. Your handle is reserved when the launch is published. An administrator reviews ownership before granting the green “Verified business” tick. Claims aren’t trademark registration, and verification isn’t an endorsement. An admin can revoke verification.</p></details><details><summary>How can I earn a badge?</summary><p>Share posts, launch projects, start polls, or join conversations. Activity badges appear on your profile automatically; admins can also award special recognition.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">View all badges →</a></details><details><summary>Can I sign in with Google or Facebook?</summary><p>Yes, on the live site once social sign-in is configured. Use “Continue with Google” or “Continue with Facebook” on either sign-in or registration. Email sign-in is always available. The standalone demo cannot connect to these providers.</p></details><details><summary>Where can I change my avatar?</summary><p>Open your profile, choose Edit profile, and select an original VibeDock character or upload your own photo. Your pick is just for expression, not a profile label.</p></details><details><summary>How do I report an issue or unsafe content?</summary><p>Use the post’s More options menu or the message’s options to report content to the site team. You can also block members. Never share account credentials or private API keys in posts.</p><a class="feature-link" href="/guidelines" data-action="go-page" data-page="guidelines">Read the guidelines →</a></details></section></main>`;
 }
 function renderRecognitionAdmin() {
     const members = new Map(state.posts.filter(post=>post.author?.id).map(post=>[String(post.author.id),post.author]));
@@ -1135,37 +1136,34 @@ function renderProfileEditPage() {
     if (!state.currentUser) return `<main class="route-main"><section class="route-empty"><h1>Edit profile</h1><button class="btn btn-primary" data-action="open-auth" data-mode="login">Sign in</button></section></main>`;
     const user=state.currentUser;
     return `<main class="route-main profile-edit-page"><header class="settings-heading"><div><span class="section-kicker">Make yourself at home</span><h1>Your profile, your personality.</h1></div><button class="btn btn-outline" data-action="open-my-profile">View profile ${icon('arrow_forward',18)}</button></header>
-    <form data-form="profile" class="profile-settings-form"><aside class="settings-preview"><div class="profile-preview-cover cover-${escapeHtml(user.coverChoice||'aurora')}"></div><img class="settings-avatar" src="${escapeHtml(avatarAsset(user.avatarUrl)?.large || safeImageUrl(user.avatarUrl) || avatarPath('fluent-astronaut', 'large'))}" alt="Your selected avatar" width="112" height="112" decoding="async" loading="eager"><h2 data-profile-name>${escapeHtml(user.name)}</h2><p>@${escapeHtml(user.username)}</p><div class="settings-section-links"><a href="#profile-basics">The basics</a><a href="#profile-style">Your look</a><a href="#profile-skills">Your skills</a></div><button type="submit" class="btn btn-primary">Save changes ${icon('check',18)}</button></aside>
+    <form data-form="profile" class="profile-settings-form"><aside class="settings-preview"><div class="profile-preview-cover cover-${escapeHtml(user.coverChoice||'aurora')}"></div><img class="settings-avatar" src="${escapeHtml(avatarAsset(user.avatarUrl)?.large || safeImageUrl(user.avatarUrl) || avatarPath('orbit-ollie', 'large'))}" alt="Your selected avatar" width="112" height="112" decoding="async" loading="eager"><h2 data-profile-name>${escapeHtml(user.name)}</h2><p>@${escapeHtml(user.username)}</p><div class="settings-section-links"><a href="#profile-basics">The basics</a><a href="#profile-style">Your look</a><a href="#profile-skills">Your skills</a></div><button type="submit" class="btn btn-primary">Save changes ${icon('check',18)}</button></aside>
     <div class="settings-fields"><section id="profile-basics" class="settings-panel"><div class="settings-panel-heading">${illustration('maker')}<div><h2>The basics</h2><p>Let fellow makers get to know you.</p></div></div><div class="settings-two-col"><label class="field-label">Name<input name="name" value="${escapeHtml(user.name)}" maxlength="80" minlength="2" required></label><label class="field-label">Username<input name="username" value="${escapeHtml(user.username)}" pattern="[A-Za-z0-9_]+" minlength="3" maxlength="24" required></label></div><label class="field-label">What do you do?<input name="profession" value="${escapeHtml(user.profession||'')}" maxlength="80" placeholder="Designer, developer, curious human…"></label><label class="field-label">About you<textarea name="bio" rows="3" maxlength="280">${escapeHtml(user.bio||'')}</textarea></label><label class="field-label">Website<input name="website" type="url" value="${escapeHtml(user.website||'')}" placeholder="https://"></label></section>
-    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>A little character</h2><p>Male, female, or a little character. Find your look.</p></div></div>${renderAvatarPicker(user)}${uploadField('avatar', 'Or upload your own photo')}${renderCoverPicker(user)}</section>
+    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>Choose your character</h2><p>Original VibeDock illustrations with a little more personality.</p></div></div>${renderAvatarPicker(user)}${uploadField('avatar', 'Or upload your own photo')}${renderCoverPicker(user)}</section>
     <section id="profile-skills" class="settings-panel"><div class="settings-panel-heading">${illustration('build')}<div><h2>What’s in your toolkit?</h2><p>Choose up to 12 skills. Add your own, too.</p></div></div><label class="field-label">Selected skills<input name="skills" maxlength="420" value="${escapeHtml((user.skills||[]).join(', '))}" placeholder="Add custom skills, separated by commas"></label>${renderSkillPicker(user.skills||[])}</section><div class="settings-save"><div class="form-message" data-form-message hidden></div><button type="submit" class="btn btn-primary">Save changes</button></div></div></form></main>`;
 }
 
 function renderAvatarPicker(user) {
     const selected = user.avatarUploaded || !AVATAR_CHOICES.some(choice=>choice.key===user.avatarChoice) ? 'keep' : user.avatarChoice;
-    const groups = ['Male', 'Female', 'Characters'];
-    const active = AVATAR_CHOICES.find(choice => choice.key === selected)?.group || 'Male';
+    const groups = [...new Set(AVATAR_CHOICES.map(choice => choice.group))];
+    const active = AVATAR_CHOICES.find(choice => choice.key === selected)?.group || groups[0];
     return `<fieldset class="avatar-picker" data-active-avatar-group="${active}"><legend>Avatar</legend>
         ${selected === 'keep' ? `<label class="avatar-current-choice"><input type="radio" name="avatar_choice" value="keep" checked>${avatar(user.name || 'You', 'tone-neutral', 'avatar-choice-preview', user.avatarUrl)}<span>Keep current avatar</span></label>` : ''}
-        <div class="avatar-picker-tools"><div class="avatar-group-switch" role="group" aria-label="Avatar category">${groups.map(group => `<button type="button" data-action="avatar-group" data-group="${group}" aria-pressed="${group === active}" aria-controls="avatar-${group.toLowerCase()}">${group}</button>`).join('')}</div><button type="button" class="btn btn-outline btn-small" data-action="random-avatar">${icon('shuffle', 16)} Random</button></div>
-        ${groups.map(group => `<div class="avatar-choice-group" id="avatar-${group.toLowerCase()}" data-avatar-group="${group}" ${active !== group ? 'hidden' : ''}><div class="avatar-choice-grid">${AVATAR_CHOICES.filter(choice => choice.group === group).map((choice, index) => {
-            const visible = index < 8 || selected === choice.key;
-            return `<label ${!visible ? 'hidden' : ''} data-avatar-index="${index}" class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}>${active === group && visible ? avatarChoiceImage(choice) : `<span class="avatar-placeholder" data-avatar-image="${choice.key}"></span>`}<span>${choice.label}</span></label>`;
-        }).join('')}</div>${group === 'Characters' ? `<button type="button" class="picker-expand" data-action="expand-avatars" aria-expanded="false" aria-controls="avatar-characters">Meet all 12 characters ${icon('expand_more',18)}</button>` : ''}</div>`).join('')}
-        <p class="avatar-picker-note">Your choice, not a profile label. Only the group you open loads images.</p>
+        <div class="avatar-picker-tools"><div class="avatar-group-switch" role="group" aria-label="Avatar collection">${groups.map(group => `<button type="button" data-action="avatar-group" data-group="${group}" aria-pressed="${group === active}" aria-controls="avatar-${group.toLowerCase()}">${group}</button>`).join('')}</div><button type="button" class="btn btn-outline btn-small" data-action="random-avatar">${icon('shuffle', 16)} Random</button></div>
+        ${groups.map(group => `<div class="avatar-choice-group" id="avatar-${group.toLowerCase()}" data-avatar-group="${group}" ${active !== group ? 'hidden' : ''}><div class="avatar-choice-grid">${AVATAR_CHOICES.filter(choice => choice.group === group).map(choice => `<label class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}>${active === group ? avatarChoiceImage(choice) : `<span class="avatar-placeholder" data-avatar-image="${choice.key}"></span>`}<span>${choice.label}</span></label>`).join('')}</div></div>`).join('')}
+        <p class="avatar-picker-note">Choose any illustration you like. We load each collection only when you open it.</p>
     </fieldset>`;
 }
 function avatarChoiceImage(choice) {
     return `<img src="${avatarPath(choice.key)}" ${avatarResolutionAttributes(choice.key, 72)} alt="${choice.label}" width="96" height="96" loading="lazy" decoding="async">`;
 }
 function hydrateAvatarGroup(panel) {
-    panel.querySelectorAll('.avatar-choice:not([hidden]) [data-avatar-image]').forEach(placeholder => {
+    panel.querySelectorAll('[data-avatar-image]').forEach(placeholder => {
         const choice = AVATAR_CHOICES.find(item => item.key === placeholder.dataset.avatarImage);
         if (choice) placeholder.outerHTML = avatarChoiceImage(choice);
     });
 }
 function selectAvatarGroup(picker, group) {
-    if (!['Male','Female','Characters'].includes(group)) return;
+    if (!AVATAR_CHOICES.some(choice => choice.group === group)) return;
     picker.dataset.activeAvatarGroup = group;
     picker.querySelectorAll('[data-action="avatar-group"]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.group === group)));
     picker.querySelectorAll('[data-avatar-group]').forEach(panel => {
@@ -1700,8 +1698,8 @@ async function createAuth(form) {
             state.currentUser = result.user;
         } else if (mode === 'login') {
             const demoAccounts = {
-                'demo@vibedock.test': { password: 'VibeDockDemo2026!', name: 'Demo Maker', username: 'demomaker', avatarChoice: 'fluent-owl', coverChoice: 'blossom', isAdmin: false, profession: 'Independent maker', skills: ['Prototyping', 'AI tools', 'Product design'] },
-                'admin@vibedock.test': { password: 'VibeDockAdmin2026!', name: 'Demo Admin', username: 'demoadmin', avatarChoice: 'fluent-ninja', coverChoice: 'ocean', isAdmin: true, profession: 'Community moderator', skills: ['Community building'] },
+                'demo@vibedock.test': { password: 'VibeDockDemo2026!', name: 'Demo Maker', username: 'demomaker', avatarChoice: 'byte-bard', coverChoice: 'blossom', isAdmin: false, profession: 'Independent maker', skills: ['Prototyping', 'AI tools', 'Product design'] },
+                'admin@vibedock.test': { password: 'VibeDockAdmin2026!', name: 'Demo Admin', username: 'demoadmin', avatarChoice: 'noodle-ninja', coverChoice: 'ocean', isAdmin: true, profession: 'Community moderator', skills: ['Community building'] },
             };
             const account = demoAccounts[payload.email.toLowerCase()];
             if (!account || account.password !== payload.password) throw new Error('Use one of the demo accounts shown above.');
@@ -1710,7 +1708,7 @@ async function createAuth(form) {
         } else {
             const username = payload.username || payload.name.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
             if (username.length < 3) throw new Error('Choose a username with at least three letters or numbers.');
-            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'fluent-astronaut', avatarUploaded: false, avatarUrl: '/avatars/fluent-astronaut.png', isAdmin: false };
+            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'orbit-ollie', avatarUploaded: false, avatarUrl: '/avatars/orbit-ollie.svg', isAdmin: false };
             writeStorage(STORAGE.user, state.currentUser);
         }
         state.modal = null;
@@ -2397,19 +2395,12 @@ root.addEventListener('click', async (event) => {
         return;
     }
     if (action === 'avatar-group') { selectAvatarGroup(target.closest('.avatar-picker'), target.dataset.group); return; }
-    if (action === 'expand-avatars' || action === 'expand-skills') {
+    if (action === 'expand-skills') {
         const expanded = target.getAttribute('aria-expanded') !== 'true';
         target.setAttribute('aria-expanded', String(expanded));
         const fieldset = target.closest('fieldset');
-        if (action === 'expand-avatars') {
-            const panel = target.closest('[data-avatar-group]');
-            panel.querySelectorAll('[data-avatar-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.avatarIndex) >= 8 && !choice.querySelector('input').checked; });
-            hydrateAvatarGroup(panel);
-            target.textContent = expanded ? 'Show fewer characters' : 'Meet all 12 characters';
-        } else {
-            fieldset.querySelectorAll('[data-skill-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.skillIndex) >= 16 && choice.getAttribute('aria-pressed') !== 'true'; });
-            target.textContent = expanded ? 'Show fewer skills' : `Browse all ${SKILLS.length} skills`;
-        }
+        fieldset.querySelectorAll('[data-skill-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.skillIndex) >= 16 && choice.getAttribute('aria-pressed') !== 'true'; });
+        target.textContent = expanded ? 'Show fewer skills' : `Browse all ${SKILLS.length} skills`;
         return;
     }
     if (action === 'reload-rankings') return loadRankings();
@@ -2790,7 +2781,7 @@ root.addEventListener('error', event => {
     const image = event.target;
     if (!(image instanceof HTMLImageElement) || image.dataset.fallback) return;
     image.dataset.fallback = 'true';
-    if (image.closest('.avatar') || image.classList.contains('settings-avatar')) { image.removeAttribute('srcset'); image.src = avatarPath('fluent-robot'); }
+    if (image.closest('.avatar') || image.classList.contains('settings-avatar')) { image.removeAttribute('srcset'); image.src = avatarPath('robo-ravi'); }
     else {
         const notice = document.createElement('span');
         notice.className = 'image-unavailable'; notice.setAttribute('role', 'img');

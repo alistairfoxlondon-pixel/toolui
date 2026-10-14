@@ -11,7 +11,7 @@ FONT = ROOT / "node_modules/material-symbols/material-symbols-rounded.woff2"
 # key used in our app -> Material Symbols glyph name
 ICONS = {
     "arrow_back": "arrow_back", "anchor": "anchor", "star": "star",
-    "search": "search", "add": "add", "arrow_forward": "arrow_forward",
+    "search": "search", "add": "add", "add_reaction": "add_reaction", "arrow_forward": "arrow_forward",
     "open_in_new": "open_in_new", "arrow_upward": "arrow_upward",
     "arrow_downward": "arrow_downward", "monitoring": "monitoring",
     "explore": "explore", "rocket_launch": "rocket_launch", "forum": "forum",
@@ -29,7 +29,8 @@ ICONS = {
     "edit": "edit", "comment": "comment", "sell": "sell", "payments": "payments",
     "auto_awesome": "auto_awesome", "code": "code", "visibility": "visibility",
     "visibility_off": "visibility_off", "home": "home", "refresh": "refresh",
-    "thumb_up": "thumb_up", "thumb_down": "thumb_down", "error": "error",
+    "thumb_up": "thumb_up", "thumb_down": "thumb_down", "sentiment_very_satisfied": "sentiment_very_satisfied",
+    "volunteer_activism": "volunteer_activism", "error": "error",
     "info": "info", "schedule": "schedule", "trophy": "trophy", "mail": "mail",
     "terminal": "terminal", "school": "school", "lightbulb": "lightbulb",
     "cloud": "cloud", "memory": "memory", "speed": "speed", "shield": "shield",

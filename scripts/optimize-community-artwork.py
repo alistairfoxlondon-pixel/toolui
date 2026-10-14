@@ -1,4 +1,4 @@
-"""Build locally hosted, responsive WebP avatars from licensed PNGs.
+"""Rebuild archived Fluent WebP derivatives without touching the active SVG avatar library.
 Usage: python scripts/optimize-community-artwork.py path/to/source-png-directory
 Requires Pillow. Source files must use the keys in public/avatars/fluent/sources.json.
 The source manifest records Microsoft Fluent Emoji paths and git blob hashes.
@@ -34,5 +34,6 @@ for source in sources:
         'small': encode(key, image, 96, 'avatars/optimized'),
         'large': encode(key, image, 256, 'avatars/optimized'),
     }
-(ROOT / 'resources/data/avatar-assets.json').write_text(json.dumps(avatars, indent=2) + '\n')
-print(f'Built {len(avatars)} responsive avatar pairs.')
+archive_manifest = ROOT / 'public/avatars/optimized/archive-manifest.json'
+archive_manifest.write_text(json.dumps(avatars, indent=2) + '\n')
+print(f'Built {len(avatars)} archived responsive avatar pairs.')

@@ -9,7 +9,7 @@
 .display-badge:first-child { width: 106px; height: 106px; background: #ffedb0; transform: rotate(-9deg); }
 .display-badge:nth-child(3) { background: #e9e1f7; transform: rotate(-6deg); }
 .badge-scene small { width: 100%; text-align: center; margin-top: 12px; font-size: 11px; color: #66765f; }
-.avatar img[src*="fluent-"], .settings-avatar[src*="fluent-"], .avatar-choice img[src*="fluent-"] { object-fit: contain; padding: 7%; background: #f5f1e9; }
+.avatar img[src*="/avatars/"], .settings-avatar[src*="/avatars/"] { object-fit: cover; background: #f5f1e9; }
 .avatar img { width: 100%; height: 100%; }
 .avatar-choice:has(input:focus-visible) { outline: 3px solid var(--primary); outline-offset: 3px; }
 .post-image { width: 100%; height: auto; max-height: 600px; object-fit: contain; background: #f6f7f4; }
@@ -82,7 +82,7 @@
 .feature-art.scene-image img { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
 .character-scene > .dock-illustration { width: 44px; height: 44px; top: 16px; right: 43%; left: auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; transform: none; }
 .badge-scene { background: #f2f0fa; }
-/* Small, local WebP artwork; category panels do not fetch hidden portraits. */
+/* Lightweight local vector artwork; unopened collections do not fetch hidden images. */
 .avatar-group-switch { display: flex; flex-wrap: wrap; gap: 6px; }
 .avatar-group-switch button { min-height: 42px; padding: 9px 15px; border: 1px solid var(--border); border-radius: 12px; color: var(--on-surface-muted); background: #fff; font-size: 13px; font-weight: 600; }
 .avatar-group-switch button[aria-pressed="true"] { color: var(--primary); background: #edf5e3; border-color: var(--primary); }
@@ -90,31 +90,42 @@
 .avatar-picker-tools { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
 .avatar-choice-group[hidden] { display: none !important; }
 .avatar-choice-group .picker-expand { margin-top: 14px; width: 100%; }
-.avatar-placeholder { display: block; width: 72px; height: 72px; border-radius: 18px; background: #f1f0e9; }
+.avatar-placeholder { display: block; width: 100%; aspect-ratio: 1; border-radius: 16px; background: linear-gradient(145deg, #f0f3e9, #e5ecdf); }
 .avatar-picker-note { font-size: 11px; line-height: 1.7; color: var(--on-surface-muted); margin: 16px 0 0; }
-.profile-settings-form .avatar-choice img { width: 72px; height: 72px; max-width: 100%; object-fit: contain; }
-/* Reactions are compact until requested. The picker uses the same two-tone SVG language as the rest of the product. */
+/* The original VibeDock cast uses full-bleed vector art rather than tiny emoji-like portraits. */
+.profile-settings-form .avatar-picker { padding: 17px; border-radius: 16px; background: #fcfdf9; }
+.profile-settings-form .avatar-choice-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; }
+.profile-settings-form .avatar-choice { overflow: hidden; justify-content: flex-start; min-height: 0; padding: 8px; gap: 7px; border-radius: 15px; background: #fff; box-shadow: 0 1px 0 #253d3208; }
+.profile-settings-form .avatar-choice:hover { border-color: #9abf91; background: #f7fbf3; transform: translateY(-1px); }
+.profile-settings-form .avatar-choice.is-selected { border-color: var(--primary); background: #edf5e3; box-shadow: 0 0 0 1px #cce0c2; }
+.profile-settings-form .avatar-choice img { display: block; width: 100%; height: auto; max-width: none; aspect-ratio: 1; border-radius: 11px; object-fit: cover; background: #edf1e8; }
+.profile-settings-form .avatar-choice > span:not(.avatar-placeholder) { width: 100%; min-height: 2.8em; color: #46554b; font-size: 10px; font-weight: 700; line-height: 1.35; text-align: center; }
+.profile-settings-form .avatar-choice.is-selected > span:not(.avatar-placeholder) { color: #24583b; }
+/* Reactions stay compact in the feed; the picker expands into named, tactile choices. */
 .post-reactions { position: relative; flex: 0 0 auto; }
 .reaction-trigger { border: 1px solid transparent; }
 .reaction-trigger .reaction-icon { width: 21px; height: 21px; }
 .reaction-trigger.is-selected { color: #24583b; background: #edf5e3; border-color: #a8c795; box-shadow: inset 0 0 0 1px #d1e5c3; }
+.reaction-trigger.reaction-love { color: #ae4058; background: #fff0f3; border-color: #f1c4cd; box-shadow: inset 0 0 0 1px #f9dfe4; }
+.reaction-trigger.reaction-celebrate { color: #956119; background: #fff7df; border-color: #ecd08b; box-shadow: inset 0 0 0 1px #f7e8bd; }
+.reaction-trigger.reaction-helpful { color: #306b69; background: #e8f6f4; border-color: #abd9d4; box-shadow: inset 0 0 0 1px #d3ece8; }
+.reaction-trigger.reaction-support { color: #5d5497; background: #f0edfb; border-color: #cfc7ee; box-shadow: inset 0 0 0 1px #e2def5; }
+.reaction-trigger.reaction-laugh { color: #ab6829; background: #fff3e6; border-color: #efc997; box-shadow: inset 0 0 0 1px #fae0c0; }
+.reaction-trigger.reaction-wow { color: #396fa4; background: #eaf4ff; border-color: #b7d5ed; box-shadow: inset 0 0 0 1px #d8e9f7; }
 .reaction-trigger:hover { border-color: #bdd3ad; }
 .reaction-trigger:focus-visible, .reaction-choice:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .reaction-trigger:disabled, .reaction-choice:disabled { opacity: .65; cursor: wait; }
 .reaction-picker {
     position: absolute;
     z-index: 24;
-    bottom: calc(100% + 9px);
+    bottom: calc(100% + 11px);
     left: 0;
-    display: grid;
-    grid-template-columns: repeat(6, 38px);
-    gap: 4px;
-    width: max-content;
-    padding: 7px;
+    width: min(300px, calc(100vw - 52px));
+    padding: 12px;
     border: 1px solid #d9e5d0;
-    border-radius: 17px;
+    border-radius: 18px;
     background: #fff;
-    box-shadow: 0 12px 28px rgba(31, 70, 46, .18), 0 2px 6px rgba(31, 70, 46, .09);
+    box-shadow: 0 16px 34px rgba(31, 70, 46, .18), 0 3px 8px rgba(31, 70, 46, .08);
     transform-origin: bottom left;
     animation: reaction-picker-in .16s var(--ease) both;
 }
@@ -130,30 +141,50 @@
     content: '';
     transform: rotate(45deg);
 }
+.reaction-picker-heading { margin: 0 0 9px 2px; color: #5d6f60; font-size: 11px; font-weight: 700; letter-spacing: .02em; }
+.reaction-choice-grid { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .reaction-choice {
-    position: relative;
-    z-index: 1;
-    display: inline-grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
+    --reaction: #46614d;
+    --reaction-wash: #f2f6f0;
+    --reaction-border: #d9e5d0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+    gap: 7px;
+    padding: 7px 6px;
     border: 1px solid transparent;
-    border-radius: 11px;
-    color: #46614d;
+    border-radius: 12px;
+    color: #46584c;
     background: transparent;
-    transition: transform .14s var(--ease), background .14s var(--ease), border-color .14s var(--ease), color .14s var(--ease);
+    font: inherit;
+    transition: transform .14s var(--ease), background .14s var(--ease), border-color .14s var(--ease), box-shadow .14s var(--ease);
 }
-.reaction-choice .reaction-icon { width: 23px; height: 23px; }
-.reaction-choice:hover { color: var(--primary-hover); border-color: #cae0bc; background: #eff7e8; transform: translateY(-2px); }
-.reaction-choice.is-selected { color: #24583b; border-color: #9abc83; background: #e5f2db; box-shadow: inset 0 0 0 1px #d1e7c2; }
+.reaction-choice-icon { display: grid; flex: 0 0 29px; place-items: center; width: 29px; height: 29px; border-radius: 10px; color: var(--reaction); background: var(--reaction-wash); }
+.reaction-choice .reaction-icon { width: 19px; height: 19px; }
+.reaction-choice-label { font-size: 11px; font-weight: 700; }
+.reaction-choice.reaction-love { --reaction: #ae4058; --reaction-wash: #fff0f3; --reaction-border: #f1c4cd; }
+.reaction-choice.reaction-celebrate { --reaction: #956119; --reaction-wash: #fff7df; --reaction-border: #ecd08b; }
+.reaction-choice.reaction-helpful { --reaction: #306b69; --reaction-wash: #e8f6f4; --reaction-border: #abd9d4; }
+.reaction-choice.reaction-support { --reaction: #5d5497; --reaction-wash: #f0edfb; --reaction-border: #cfc7ee; }
+.reaction-choice.reaction-laugh { --reaction: #ab6829; --reaction-wash: #fff3e6; --reaction-border: #efc997; }
+.reaction-choice.reaction-wow { --reaction: #396fa4; --reaction-wash: #eaf4ff; --reaction-border: #b7d5ed; }
+.reaction-choice:hover { border-color: var(--reaction-border); background: var(--reaction-wash); transform: translateY(-1px); }
+.reaction-choice.is-selected { border-color: var(--reaction-border); background: var(--reaction-wash); box-shadow: inset 0 0 0 1px var(--reaction-border); }
+.reaction-choice.is-selected .reaction-choice-icon { background: #fff; box-shadow: 0 1px 4px #253d3214; }
 .reaction-count { min-width: 0; font-variant-numeric: tabular-nums; font-size: 11px; }
 .reaction-count:empty { display: none; }
 .post-utility-label { font-size: 12px; }
 @keyframes reaction-picker-in { from { opacity: 0; transform: translateY(5px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 520px) {
-    .reaction-picker { grid-template-columns: repeat(6, 36px); gap: 3px; padding: 6px; border-radius: 15px; }
-    .reaction-choice { width: 36px; height: 36px; }
-    .reaction-choice .reaction-icon { width: 21px; height: 21px; }
+    .reaction-picker { padding: 10px; border-radius: 16px; }
+    .reaction-choice { min-height: 52px; gap: 5px; padding-inline: 4px; }
+    .reaction-choice-icon { flex-basis: 27px; width: 27px; height: 27px; }
+    .reaction-choice .reaction-icon { width: 18px; height: 18px; }
+    .reaction-choice-label { font-size: 10px; }
+    .profile-settings-form .avatar-choice-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .profile-settings-form .avatar-choice { padding: 6px; gap: 5px; }
+    .profile-settings-form .avatar-choice > span:not(.avatar-placeholder) { font-size: 9px; }
     .avatar-picker-tools > .btn { padding: 6px 10px; }
     .avatar-group-switch button { font-size: 12px; padding-inline: 12px; }
 }

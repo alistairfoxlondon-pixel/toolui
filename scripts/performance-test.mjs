@@ -38,11 +38,10 @@ console.log('PASS: font activation/cache invalidation, memoized skill artwork, u
 const avatarAssets = JSON.parse(await readFile(new URL('../resources/data/avatar-assets.json', import.meta.url), 'utf8'));
 assert.equal(Object.keys(avatarAssets).length,24);
 for (const item of Object.values(avatarAssets)) {
-    for (const size of ['small','large']) {
-        const image = await readFile(new URL(`../public${item[size]}`,import.meta.url));
-        assert.match(item[size], /-[a-f0-9]{10}\.webp$/);
-        assert.equal(image.toString('ascii',8,12),'WEBP');
-        assert.ok(image.length < (size==='small'?5000:12000), `${size} avatar exceeds its byte budget`);
-    }
+    assert.equal(item.small, item.large, 'the responsive vector source is resolution independent');
+    assert.match(item.small, /^\/avatars\/[a-z-]+\.svg$/);
+    const image = await readFile(new URL(`../public${item.small}`,import.meta.url), 'utf8');
+    assert.match(image, /^<svg[^>]+viewBox=/, 'avatar must be a real SVG document');
+    assert.ok(Buffer.byteLength(image) < 3000, 'avatar artwork should stay lightweight');
 }
-console.log('PASS: all 24 avatars are local fingerprinted WebP assets within byte budgets');
+console.log('PASS: all 24 avatars are lightweight local SVG illustrations');

@@ -191,16 +191,16 @@ for (const mode of ['login','register']) {
     h.close();
 }
 {
-    const h=harness('/settings/profile',{apiEnabled:false,currentUser:member});
-    assert.match(h.$('.settings-avatar').src,/fluent-astronaut-256-[a-f0-9]+\.webp/,'old avatar selections resolve to new art');
+    const legacyMember={...member,avatarChoice:'fluent-astronaut',avatarUrl:'/avatars/optimized/fluent-astronaut-256-legacy.webp'};
+    const h=harness('/settings/profile',{apiEnabled:false,currentUser:legacyMember});
+    assert.match(h.$('.settings-avatar').src,/\/avatars\/orbit-ollie\.svg$/,'retired portrait selections resolve to the illustrated library');
     const choices=[...h.w.document.querySelectorAll('.avatar-choice img')];
-    assert.equal(choices.length,6, 'only the initial male category has images');
+    assert.equal(choices.length,8, 'only the initial maker collection loads its images');
     assert.equal(h.w.document.querySelectorAll('.avatar-choice').length,24);
-    assert.equal(h.w.document.querySelectorAll('[data-avatar-image]').length,18, 'other groups have request-free placeholders');
-    h.click('[data-action="avatar-group"][data-group="Female"]');
-    assert.equal(h.w.document.querySelectorAll('[data-avatar-group="Female"] img').length,6);
-    h.click('[data-action="avatar-group"][data-group="Characters"]');
-    h.click('[data-action="expand-avatars"]');
+    assert.equal(h.w.document.querySelectorAll('[data-avatar-image]').length,16, 'closed collections retain request-free placeholders');
+    h.click('[data-action="avatar-group"][data-group="Creatures"]');
+    assert.equal(h.w.document.querySelectorAll('[data-avatar-group="Creatures"] img').length,8);
+    h.click('[data-action="avatar-group"][data-group="Sidekicks"]');
     assert.equal(h.w.document.querySelectorAll('.avatar-choice img').length,24);
     for (const img of choices) assert.ok(fs.existsSync(new URL(`../public${new URL(img.src).pathname}`,import.meta.url)));
     h.close();
@@ -218,7 +218,9 @@ console.log('PASS: dedicated creation, safe claims, draft retention, duplicate p
     await tick(); h.click('[data-action="comment-toggle"]');h.input('.comment-form input','Keep my unfinished reply');
     const card=h.$('.post-card'); const draft=h.$('.comment-form input');
     h.click('[data-action="toggle-reactions"]');
-    assert.equal(h.w.document.querySelectorAll('.reaction-choice').length, 6, 'the compact control opens six icon choices');
+    assert.equal(h.w.document.querySelectorAll('.reaction-choice').length, 6, 'the compact control opens six reaction choices');
+    assert.equal(h.w.document.querySelectorAll('.reaction-choice-label').length, 6, 'each reaction icon has a visible name');
+    assert.match(h.$('.reaction-picker').textContent, /Love[\s\S]*Celebrate[\s\S]*Helpful/, 'the picker presents clear reaction labels');
     assert.equal(h.w.document.querySelectorAll('.reaction-picker img').length, 0, 'the picker does not render emoji image assets');
     h.click('[data-reaction="laugh"]');
     assert.equal(h.calls.filter(call=>call.url.endsWith('/react')).length,1,'one picker choice sends one mutation');
