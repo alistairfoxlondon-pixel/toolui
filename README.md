@@ -98,7 +98,7 @@ The site does not require a Node server, Redis, or queue workers at runtime. Con
 ## Community pages
 
 - `/` is the visual landing page; `/feed` is the separate community feed.
-- `/polls` is the dedicated community-poll page. `/models` permanently redirects here; catalogue API/admin routes are retired.
+- Polls live in the community feed. Use the **Polls** feed filter to browse them; legacy `/polls` and `/models` links permanently redirect to `/feed?filter=poll`. Catalogue API/admin routes are retired.
 - `/create/post`, `/create/question`, `/create/poll`, and `/create/launch` are independent creation pages, not a shared modal.
 - `/brands/{slug}` opens the claimed brand’s launch.
 - `/badges` explains activity milestones and admin recognition; `/help` explains the main features.
@@ -185,7 +185,7 @@ The homepage retains its hero, palette, section order, and feature-card layout. 
 
 ### Validation for this update
 
-`npm test` covers catalogue retirement, separate creation routes, Google/Facebook entry points, refreshed CSRF, existing community interactions, profile editing and new avatars. `npm run build` produces production assets. Chromium responsive checks passed on 12 pages at 320, 390, 768, and 1440 pixels (48 checks), with no horizontal overflow, broken image requests, cropped feature artwork, or JavaScript exceptions in those checks. Interaction checks cover the dedicated forms, brand claim/duplicate rejection, local admin badge award/revocation, local verification/revocation, poll voting, and avatar save/reload. These checks are not a guarantee that every issue on the site is fixed.
+`npm test` covers catalogue retirement into the feed, separate creation routes, Google/Facebook entry points, refreshed CSRF, existing community interactions, profile editing and new avatars. `npm run build` produces production assets. Chromium responsive checks passed on 12 pages at 320, 390, 768, and 1440 pixels (48 checks), with no horizontal overflow, broken image requests, cropped feature artwork, or JavaScript exceptions in those checks. Interaction checks cover the dedicated forms, brand claim/duplicate rejection, local admin badge award/revocation, local verification/revocation, poll voting, and avatar save/reload. These checks are not a guarantee that every issue on the site is fixed.
 
 `tests/Feature/BadgesAndBrandsTest.php` covers route separation, claim validation/uniqueness, optional claims, visibility, non-self-verification, admin-only awards/revocation, and activity badges. **PHP/Laravel tests and migrations have not run in this sandbox because PHP and Composer are unavailable.** Run `php artisan test` on a configured PHP environment before production. Live Google/Facebook OAuth also requires credentials and provider callback testing on the deployment domain.
 
@@ -205,7 +205,7 @@ Verification: frontend regression/smoke tests and production build pass. Chromiu
 - Avatars now use content-fingerprinted **96px / 256px WebP** variants with responsive `srcset`. Header/profile avatars load eagerly; feed and picker images load lazily. Old PNG/SVG library selections resolve to optimized URLs, and uploaded profile photos are preserved.
 - The original 12 characters totalled **471,078 bytes as PNG**. Their 96px WebP variants total **40,730 bytes (91.4% smaller)**. Across all 24 avatars, small files are 2.4–4.4 KB and large files 3.8–10.2 KB. These are asset-size reductions, not a promise about network latency.
 - Profile settings have separate **Male**, **Female**, and **Characters** groups. Unopened groups contain request-free placeholders. Switching groups preserves the selected radio value; Random operates in the visible group. The setting is purely an avatar choice, not a gender field.
-- Every post, poll, question, launch and repost exposes **Love, Celebrate, Helpful, Support, Haha and Wow**, using small local 3D image icons. Love preserves the existing like counts/API. One additional reaction per member can be switched or removed by clicking again. Existing reaction data remains valid; no new reaction migration is required (the column is a string).
+- Every post, poll, question, launch and repost has a compact **React** control. Selecting it opens **Love, Celebrate, Helpful, Support, Haha and Wow** in a polished two-tone SVG icon picker that matches the site UI; no emoji artwork is used for reactions. Love preserves the existing like counts/API. One additional reaction per member can be switched or removed by selecting it again. Existing reaction data remains valid; no new reaction migration is required (the column is a string).
 - Reaction mutations are guarded against rapid duplicate clicks; failures retain the previous choice. Only reaction controls update, preserving decoded post images and reply drafts. Original/repost copies stay in sync. Backend reaction updates are transactional and still require an active authenticated account.
 - Apache immutable caching applies only to content-fingerprinted artwork; filenames change when content changes. Rebuild instructions and the MIT source/license are in `public/avatars/fluent/`.
 

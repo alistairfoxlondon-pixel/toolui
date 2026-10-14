@@ -93,22 +93,67 @@
 .avatar-placeholder { display: block; width: 72px; height: 72px; border-radius: 18px; background: #f1f0e9; }
 .avatar-picker-note { font-size: 11px; line-height: 1.7; color: var(--on-surface-muted); margin: 16px 0 0; }
 .profile-settings-form .avatar-choice img { width: 72px; height: 72px; max-width: 100%; object-fit: contain; }
-/* Reactions stay visible on every post, with labels and touch-size targets. */
-.post-reactions { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 0 10px; }
-.post-reactions .reaction-action { min-height: 42px; min-width: 0; padding: 7px 10px; gap: 5px; border: 1px solid var(--border); background: #fafbf7; border-radius: 12px; font-size: 11px; color: #566252; }
-.post-reactions .reaction-action:hover { border-color: #b8c9a8; background: #eef4e6; }
-.post-reactions .reaction-action.is-selected, .post-reactions .reaction-action.is-liked { color: #24583b; background: #edf5e3; border-color: #7aa572; box-shadow: inset 0 0 0 1px #7aa572; }
-.post-reactions .reaction-action:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
-.post-reactions .reaction-action:disabled { opacity: .65; cursor: wait; }
-.reaction-art { display: block; width: 24px; height: 24px; object-fit: contain; flex: 0 0 24px; }
-.reaction-count { font-variant-numeric: tabular-nums; font-size: 10px; }
+/* Reactions are compact until requested. The picker uses the same two-tone SVG language as the rest of the product. */
+.post-reactions { position: relative; flex: 0 0 auto; }
+.reaction-trigger { border: 1px solid transparent; }
+.reaction-trigger .reaction-icon { width: 21px; height: 21px; }
+.reaction-trigger.is-selected { color: #24583b; background: #edf5e3; border-color: #a8c795; box-shadow: inset 0 0 0 1px #d1e5c3; }
+.reaction-trigger:hover { border-color: #bdd3ad; }
+.reaction-trigger:focus-visible, .reaction-choice:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+.reaction-trigger:disabled, .reaction-choice:disabled { opacity: .65; cursor: wait; }
+.reaction-picker {
+    position: absolute;
+    z-index: 24;
+    bottom: calc(100% + 9px);
+    left: 0;
+    display: grid;
+    grid-template-columns: repeat(6, 38px);
+    gap: 4px;
+    width: max-content;
+    padding: 7px;
+    border: 1px solid #d9e5d0;
+    border-radius: 17px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(31, 70, 46, .18), 0 2px 6px rgba(31, 70, 46, .09);
+    transform-origin: bottom left;
+    animation: reaction-picker-in .16s var(--ease) both;
+}
+.reaction-picker::after {
+    position: absolute;
+    bottom: -6px;
+    left: 22px;
+    width: 10px;
+    height: 10px;
+    border-right: 1px solid #d9e5d0;
+    border-bottom: 1px solid #d9e5d0;
+    background: #fff;
+    content: '';
+    transform: rotate(45deg);
+}
+.reaction-choice {
+    position: relative;
+    z-index: 1;
+    display: inline-grid;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    color: #46614d;
+    background: transparent;
+    transition: transform .14s var(--ease), background .14s var(--ease), border-color .14s var(--ease), color .14s var(--ease);
+}
+.reaction-choice .reaction-icon { width: 23px; height: 23px; }
+.reaction-choice:hover { color: var(--primary-hover); border-color: #cae0bc; background: #eff7e8; transform: translateY(-2px); }
+.reaction-choice.is-selected { color: #24583b; border-color: #9abc83; background: #e5f2db; box-shadow: inset 0 0 0 1px #d1e7c2; }
+.reaction-count { min-width: 0; font-variant-numeric: tabular-nums; font-size: 11px; }
 .reaction-count:empty { display: none; }
-.post-reactions + .post-actions { justify-content: space-between; gap: 4px; border-top: 1px solid #e8ece2; padding-block: 6px; }
 .post-utility-label { font-size: 12px; }
+@keyframes reaction-picker-in { from { opacity: 0; transform: translateY(5px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 @media (max-width: 520px) {
-    .post-reactions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-    .post-reactions .reaction-action { padding: 7px 3px; font-size: 10px; gap: 4px; }
-    .reaction-art { width: 20px; height: 20px; flex-basis: 20px; }
+    .reaction-picker { grid-template-columns: repeat(6, 36px); gap: 3px; padding: 6px; border-radius: 15px; }
+    .reaction-choice { width: 36px; height: 36px; }
+    .reaction-choice .reaction-icon { width: 21px; height: 21px; }
     .avatar-picker-tools > .btn { padding: 6px 10px; }
     .avatar-group-switch button { font-size: 12px; padding-inline: 12px; }
 }

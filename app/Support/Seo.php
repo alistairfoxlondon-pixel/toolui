@@ -9,7 +9,6 @@ namespace App\Support;
 final class Seo
 {
     private const PAGES = [
-        'polls' => ['Community polls | VibeDock', 'Compare tools and get feedback from real makers.', '/polls'],
         'badges' => ['Member badges | VibeDock', 'Milestones and recognition for your contributions.', '/badges'],
         'help' => ['Help and features | VibeDock', 'Find your way around VibeDock.', '/help'],
         'create-post' => ['Create a post | VibeDock', 'Share with the community.', '/create/post'],

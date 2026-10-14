@@ -99,11 +99,15 @@ check('discussion tab announces selection', $('.feed-tab[data-filter="discussion
 check('discussion tab filters the feed', $$('.post-card').length > 0 && Boolean($('.feed-tab[data-filter="discussion"].is-active')));
 click($('.feed-tab[data-filter="all"]'));
 await flush();
-click($('[data-action="go-page"][data-page="polls"]'));
+click($('.feed-tab[data-filter="poll"]'));
 await flush();
-check('polls page shows community votes', Boolean($('.poll-panel')));
+check('polls appear inside the community feed', Boolean($('.community-section .poll-panel')) && $$('.post-card').every(card => card.querySelector('.poll-panel')));
+check('poll filter has a shareable feed URL', window.location.pathname === '/feed' && window.location.search === '?filter=poll');
+check('standalone polls navigation removed', !$('[data-page="polls"]'));
 check('catalogue navigation removed', !$('[data-page="models"]'));
-check('title updated for polls', /poll/i.test(document.title));
+check('title updated for the poll-filtered feed', /poll/i.test(document.title));
+click($('.feed-tab[data-filter="all"]'));
+await flush();
 
 click($('[data-action="go-page"][data-page="launches"]'));
 await flush();
@@ -165,17 +169,24 @@ if (likeButton) click(likeButton);
 await flush();
 check('like handled without error', errors.length === 0);
 const reactionBar = $('.post-reactions');
-check('every post exposes six image reactions', $$('.post-card').every(card=>card.querySelectorAll('.post-reactions button').length===6));
-check('reaction choices are not hidden in a popup', !$('.reaction-picker'));
-click(reactionBar.querySelector('[data-reaction="celebrate"]'));
+check('every post starts with one compact reaction control', $$('.post-card').every(card => card.querySelectorAll('.reaction-trigger').length === 1) && !$('.reaction-picker'));
+click(reactionBar.querySelector('[data-action="toggle-reactions"]'));
 await flush();
-check('visible reaction selects', Boolean($('.reaction-action[data-reaction="celebrate"].is-selected')));
-click($('.reaction-action[data-reaction="laugh"]'));
+check('reaction choices open on request', $('.reaction-picker')?.querySelectorAll('.reaction-choice').length === 6);
+check('reaction picker uses site SVG icons instead of emoji images', $('.reaction-picker img') === null && $$('.reaction-picker svg.reaction-icon').length === 6);
+click($('.reaction-picker [data-reaction="celebrate"]'));
 await flush();
-check('Haha replaces previous reaction', Boolean($('.reaction-action[data-reaction="laugh"].is-selected')) && !$('.reaction-action[data-reaction="celebrate"].is-selected'));
-click($('.reaction-action[data-reaction="laugh"]'));
+check('selected reaction closes the picker and updates the compact control', !$('.reaction-picker') && Boolean($('.reaction-trigger.is-selected')));
+click($('.reaction-trigger'));
 await flush();
-check('click again removes reaction', !$('.reaction-action[data-reaction="laugh"].is-selected'));
+click($('.reaction-picker [data-reaction="laugh"]'));
+await flush();
+check('Haha replaces previous reaction', /current Haha/.test($('.reaction-trigger').getAttribute('aria-label')));
+click($('.reaction-trigger'));
+await flush();
+click($('.reaction-picker [data-reaction="laugh"]'));
+await flush();
+check('click again removes reaction', !$('.reaction-trigger').classList.contains('is-selected'));
 
 
 

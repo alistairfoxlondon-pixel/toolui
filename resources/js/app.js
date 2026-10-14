@@ -7,7 +7,6 @@ import { ICON_PATHS, ICON_PATHS_FILLED } from './icon-paths.js';
 import { checkMessage } from './moderation.js';
 import { avatarAsset, avatarPath, avatarResolutionAttributes } from './avatars.js';
 import REACTIONS from '../data/reactions.json';
-import REACTION_ASSETS from '../data/reaction-assets.json';
 import CHARACTER_AVATARS from '../data/character-avatars.json';
 import { renderUploadField, syncUpload, validateUpload } from './uploads.js';
 import { updateMetadata } from './metadata.js';
@@ -228,16 +227,26 @@ function normalizePost(post) {
 const storedUser = apiEnabled ? null : readStorage(STORAGE.user);
 const storedPosts = apiEnabled ? null : readStorage(STORAGE.posts);
 const routeParts = parseRoute(window.location.pathname);
+const FEED_FILTERS = ['all', 'discussion', 'question', 'launch', 'poll', 'saved'];
 const routePages = {
     feed: 'feed', posts: 'feed', brands: 'feed', settings: 'profile-edit',
-    launches: 'launches', models: 'polls', polls: 'polls', badges: 'badges', help: 'help', rankings: 'rankings', 'community-chat': 'community-chat',
+    launches: 'launches', models: 'feed', polls: 'feed', badges: 'badges', help: 'help', rankings: 'rankings', 'community-chat': 'community-chat',
     messages: 'messages', about: 'about', guidelines: 'guidelines', privacy: 'privacy',
     terms: 'terms', admin: 'admin', u: 'profile',
 };
 const creationPages = ['create-post', 'create-question', 'create-poll', 'create-launch'];
 function pageForRoute(parts) { return parts[0] === 'create' && creationPages.includes(`create-${parts[1]}`) ? `create-${parts[1]}` : routePages[parts[0]] || 'home'; }
+function currentFeedFilter() {
+    const filter = new URLSearchParams(window.location.search).get('filter') || 'all';
+    return FEED_FILTERS.includes(filter) ? filter : 'all';
+}
+function feedPath(filter = 'all') {
+    const safeFilter = FEED_FILTERS.includes(filter) ? filter : 'all';
+    return safeFilter === 'all' ? '/feed' : `/feed?filter=${encodeURIComponent(safeFilter)}`;
+}
+const legacyPollRoute = ['models', 'polls'].includes(routeParts[0]);
+if (legacyPollRoute) window.history.replaceState({}, '', feedPath('poll'));
 const pathPage = pageForRoute(routeParts);
-if (routeParts[0] === 'models') window.history.replaceState({}, '', '/polls');
 
 const state = {
     currentUser: config.currentUser || storedUser || null,
@@ -265,6 +274,7 @@ const state = {
     pendingLaunchVotes: new Set(),
     pendingReactions: new Set(),
     pendingLikes: new Set(),
+    reactionPickerViewId: null,
     messagePeer: null,
     messages: [],
     messagesLoading: false,
@@ -275,7 +285,7 @@ const state = {
     postRequests: new Set(), postLoading: new Set(),
     savedIds: (readStorage('vibedock-preview-saved', []) || []).map(String),
     menuPostId: null,
-    filter: 'all',
+    filter: pathPage === 'feed' ? (legacyPollRoute ? 'poll' : currentFeedFilter()) : 'all',
     search: '',
     searchResults: { users: [], posts: [] },
     searchResultsLoading: false,
@@ -441,7 +451,6 @@ function renderHeader() {
     const pages = [
         ['home', 'home', 'Home'],
         ['feed', 'forum', 'Feed'],
-        ['polls', 'bar_chart', 'Polls'],
         ['launches', 'rocket_launch', 'Launches'],
         ['rankings', 'monitoring', 'Rankings'],
         ['community-chat', 'group', 'Chat'],
@@ -489,7 +498,7 @@ function renderHero() {
 
 function renderLanding() {
     return `<main class="landing-page">${renderHero()}
-        <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/polls" data-action="go-page" data-page="polls">${icon('bar_chart',20)} Ask the community</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
+        <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/feed?filter=poll" data-action="filter" data-filter="poll">${icon('bar_chart',20)} Ask the community</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
         <section class="feature-grid" aria-label="What you can do on VibeDock">
             <article class="feature-card feature-launch"><div class="feature-copy"><span class="feature-number">01 / LAUNCH</span><h3>Your side project. <br>Its first supporters.</h3><p>Launch your build. Find its first fans. Claim a home for your brand.</p><a class="feature-link" href="/launches" data-action="go-page" data-page="launches">Explore launches ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/launch-studio.svg" alt="An app taking shape in a maker’s launch studio" width="640" height="460" loading="lazy" decoding="async"></div></article>
             <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="${avatarPath('fluent-astronaut', 'large')}" alt="3D astronaut avatar" width="140" height="140" loading="lazy"><img src="${avatarPath('fluent-owl', 'large')}" alt="3D owl avatar" width="120" height="120" loading="lazy"><img src="${avatarPath('fluent-cat-face', 'large')}" alt="3D cat avatar" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
@@ -593,12 +602,30 @@ function renderCommentForm(post) {
     return `<form class="comment-form" data-form="comment" data-post-id="${escapeHtml(post.id)}">${avatar(state.currentUser?.name || 'You', toneFor(state.currentUser?.name || 'You'), 'avatar-mini', state.currentUser?.avatarUrl)}<label class="visually-hidden" for="comment-${escapeHtml(post.id)}">Write a reply</label><input id="comment-${escapeHtml(post.id)}" name="body" maxlength="2000" placeholder="Write a reply…" required><button type="submit" aria-label="Post reply">${icon('send', 17)}</button></form>`;
 }
 
-function reactionImage(key) {
-    return `<img class="reaction-art" src="${REACTION_ASSETS[key]}" width="24" height="24" alt="" loading="lazy" decoding="async" aria-hidden="true">`;
+const REACTION_OPTIONS = [
+    { key: 'love', label: 'Love', action: 'like' },
+    ...REACTIONS.map(reaction => ({ ...reaction, action: 'react' })),
+];
+const REACTION_ICON_NAMES = {
+    love: 'reaction_love', celebrate: 'reaction_celebrate', helpful: 'reaction_helpful',
+    support: 'reaction_support', laugh: 'reaction_laugh', wow: 'reaction_wow',
+};
+function reactionIcon(key, size = 20) {
+    return icon(REACTION_ICON_NAMES[key] || 'add_reaction', size, 'reaction-icon');
 }
-function renderReactions(post) {
+function renderReactions(post, viewId = post.id) {
     const counts = post.reactions || {};
-    return `<div class="post-reactions" role="group" aria-label="React to this post"><button class="post-action reaction-action love-reaction ${post.liked ? 'is-liked' : ''}" data-action="like" data-post-id="${escapeHtml(post.id)}" aria-pressed="${Boolean(post.liked)}" aria-label="Love" title="${post.liked ? 'Remove love' : 'Love this post'}">${reactionImage('love')}<span class="reaction-label">Love</span><span class="reaction-count">${Number(post.likes || 0) || ''}</span></button>${REACTIONS.map(({key,label}) => `<button class="post-action reaction-action ${post.myReaction === key ? 'is-selected' : ''}" data-action="react" data-reaction="${key}" data-post-id="${escapeHtml(post.id)}" aria-pressed="${post.myReaction === key}" aria-label="${label}" title="${post.myReaction === key ? 'Remove' : 'React with'} ${label.toLowerCase()}">${reactionImage(key)}<span class="reaction-label">${label}</span><span class="reaction-count">${Number(counts[key] || 0) || ''}</span></button>`).join('')}</div>`;
+    const selected = REACTION_OPTIONS.find(option => option.key === post.myReaction)
+        || (post.liked ? REACTION_OPTIONS[0] : null);
+    const pickerOpen = state.reactionPickerViewId === String(viewId);
+    const pickerId = `reaction-picker-${encodeURIComponent(String(viewId))}`;
+    const total = Number(post.likes || 0) + REACTIONS.reduce((sum, option) => sum + Number(counts[option.key] || 0), 0);
+    const triggerLabel = selected ? `Change reaction, current ${selected.label}` : 'Choose a reaction';
+    return `<div class="post-reactions reaction-control" data-reaction-view-id="${escapeHtml(viewId)}"><button class="post-action reaction-trigger ${selected ? 'is-selected' : ''}" data-action="toggle-reactions" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}" aria-expanded="${pickerOpen}" aria-haspopup="true" aria-controls="${pickerId}" aria-label="${pickerOpen ? 'Close reaction options' : triggerLabel}">${reactionIcon(selected?.key || 'add_reaction')}<span class="post-utility-label">React</span><span class="reaction-count">${total || ''}</span></button>${pickerOpen ? `<div class="reaction-picker" id="${pickerId}" role="group" aria-label="Choose a reaction">${REACTION_OPTIONS.map((option) => {
+        const isSelected = option.key === 'love' ? Boolean(post.liked) : post.myReaction === option.key;
+        const actionAttributes = option.action === 'react' ? ` data-reaction="${option.key}"` : '';
+        return `<button class="reaction-choice ${isSelected ? 'is-selected' : ''}" data-action="${option.action}" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}"${actionAttributes} aria-pressed="${isSelected}" aria-label="${isSelected ? `Remove ${option.label.toLowerCase()}` : `React with ${option.label.toLowerCase()}`}" title="${option.label}">${reactionIcon(option.key, 22)}<span class="visually-hidden">${escapeHtml(option.label)}</span></button>`;
+    }).join('')}</div>` : ''}</div>`;
 }
 
 function renderPost(post) {
@@ -645,8 +672,8 @@ function renderPost(post) {
         </div>
         ${renderCommentPreview(actionPost)}
         <div class="post-footer">
-            ${renderReactions(actionPost)}
             <div class="post-actions">
+                ${renderReactions(actionPost, post.id)}
                 <button class="post-action" data-action="comment-toggle" data-post-id="${escapeHtml(actionPost.id)}" aria-expanded="${state.commentingId === actionPost.id}" aria-label="Comment">${icon('comment', 20)}<span class="post-utility-label">Reply</span><span>${comments || ''}</span></button>
                 <button class="post-action" data-action="repost" data-post-id="${escapeHtml(actionPost.id)}" aria-label="Repost" title="Repost">${icon('repeat', 20)}<span class="post-utility-label">Repost</span><span>${Number(actionPost.repostsCount || 0) || ''}</span></button>
                 <button class="post-action share-action" data-action="share" data-post-id="${escapeHtml(post.id)}" aria-label="Share" title="Share">${icon('share', 19)}<span class="post-utility-label">Share</span></button>
@@ -696,8 +723,8 @@ function renderRightRail() {
             <h3>Made something?</h3>
             <button class="btn btn-outline btn-small" data-action="open-compose" data-type="launch">Share your project ${icon('arrow_forward', 17)}</button>
         </div>
-        <button class="rail-card toolkit-card" data-action="go-page" data-page="polls">
-            ${illustration('toolkit')}<span>Community polls</span>${icon('arrow_forward', 18)}
+        <button class="rail-card toolkit-card" data-action="filter" data-filter="poll">
+            ${illustration('toolkit')}<span>Browse community polls</span>${icon('arrow_forward', 18)}
         </button>
         <div class="community-note">${icon('group', 22)}<button data-action="go-page" data-page="guidelines">Community guidelines ${icon('arrow_forward', 14)}</button></div>
         <div class="right-footer"><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button><span>© ${new Date().getFullYear()} VibeDock</span></div>
@@ -705,14 +732,8 @@ function renderRightRail() {
 }
 
 function renderFeedSection() {
-    const filters = [
-        ['all', 'All'],
-        ['discussion', 'Discussions'],
-        ['question', 'Questions'],
-        ['launch', 'Launches'],
-        ['poll', 'Polls'],
-        ['saved', 'Saved'],
-    ];
+    const labels = { all: 'All', discussion: 'Discussions', question: 'Questions', launch: 'Launches', poll: 'Polls', saved: 'Saved' };
+    const filters = FEED_FILTERS.map(filter => [filter, labels[filter]]);
     return `<main class="feed-column" id="community-feed">
         <div class="feed-toolbar">
             <label class="mobile-feed-filter"><span class="visually-hidden">Filter posts</span><select data-feed-filter>${filters.map(([filter, label]) => `<option value="${filter}" ${state.filter === filter ? 'selected' : ''}>${label === 'All' ? 'All posts' : label}</option>`).join('')}</select></label>
@@ -874,10 +895,6 @@ function previewBadges(user) {
 function renderMemberBadges(user) {
     const badges = apiEnabled ? user.badges || [] : previewBadges(user);
     return `<div class="member-badges" aria-label="Member badges">${badges.map(badge => `<a href="/badges" data-action="go-page" data-page="badges" class="member-badge ${badge.source === 'admin' ? 'admin-awarded' : ''}" title="${badge.source === 'admin' ? 'Awarded by an administrator' : 'Earned through community activity'}">${icon(BADGES.find(item => item.key === badge.key)?.glyph || 'star',16)}${escapeHtml(badge.label)}</a>`).join('')}${!badges.length ? '<a class="badge-empty" href="/badges" data-action="go-page" data-page="badges">Your next contribution could earn a badge →</a>' : ''}</div>`;
-}
-function renderPollsPage() {
-    const polls = state.posts.filter(post => post.type === 'poll' && !post.isHidden);
-    return `<main class="route-main polls-page"><section class="page-intro">${illustration('conversation','page-art')}<div><span class="route-eyebrow">LET THE COMMUNITY WEIGH IN</span><h1>Real people. Real opinions.</h1><p>Compare tools, test an idea, or decide what to build next.</p></div><button class="btn btn-primary" data-action="open-compose" data-type="poll">${icon('add',20)} Create a poll</button></section>${state.feedError ? `<p class="feed-status" role="alert">${escapeHtml(state.feedError)} <button data-action="reload-feed">Try again</button></p>` : ''}<section class="polls-list">${!state.feedLoaded || state.feedLoading ? '<p role="status">Loading polls…</p>' : polls.length ? polls.map(renderPost).join('') : '<div class="route-empty"><h2>Be the first to ask</h2><p>Make your next decision together.</p><button class="btn btn-outline" data-action="open-compose" data-type="poll">Start a poll</button></div>'}</section></main>`;
 }
 function renderGuidePage() {
     if (state.page === 'badges') return `<main class="route-main guide-page"><header class="create-heading"><span class="section-kicker">SMALL STEPS. WELL EARNED.</span><h1>Your activity tells a story.</h1><p>Badges recognize what you bring to the dock.</p></header><div class="badge-guide-grid">${BADGES.map(badge => `<article class="badge-guide-card"><span class="badge-medallion ${badge.source === 'admin' ? 'admin-awarded' : ''}">${icon(badge.glyph,30)}</span><small>${badge.source === 'admin' ? 'ADMIN AWARDED' : 'ACTIVITY MILESTONE'}</small><h2>${badge.label}</h2><p>${badge.description}</p></article>`).join('')}</div><section class="guide-note"><h2>Earned, not bought.</h2><p>Activity badges reflect your current visible contributions. Removed or hidden content doesn’t count. Admin awards can be granted or revoked by the site team.</p><p>A business verification tick is separate: it indicates an admin has reviewed brand ownership, not that a project is endorsed.</p><a class="feature-link" href="/create/post" data-action="open-compose" data-type="discussion">Share something ${icon('arrow_forward',18)}</a></section></main>`;
@@ -1047,7 +1064,7 @@ function renderFooter() {
     return `<footer class="site-footer"><div class="footer-shell">
         <div class="footer-main">
             <div class="footer-brand-block"><a class="brand footer-brand" href="/" data-action="go-page" data-page="home">${brandMark()}<span class="brand-word">vibe<span>dock</span></span></a><p>A home for vibe coders.</p></div>
-            <div class="footer-column"><strong>Explore</strong><button data-action="go-page" data-page="feed">Feed</button><button data-action="go-page" data-page="polls">Polls</button><button data-action="go-page" data-page="launches">Launches</button><button data-action="go-page" data-page="rankings">Rankings</button><button data-action="go-page" data-page="community-chat">Community chat</button></div>
+            <div class="footer-column"><strong>Explore</strong><button data-action="go-page" data-page="feed">Feed</button><button data-action="filter" data-filter="poll">Polls in the feed</button><button data-action="go-page" data-page="launches">Launches</button><button data-action="go-page" data-page="rankings">Rankings</button><button data-action="go-page" data-page="community-chat">Community chat</button></div>
             <div class="footer-column"><strong>Information</strong><button data-action="go-page" data-page="help">Help & features</button><button data-action="go-page" data-page="badges">Badges</button><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="guidelines">Guidelines</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button></div>
             <div class="footer-column"><strong>Account</strong>${state.currentUser ? `<button data-action="open-my-profile">Your profile</button><button data-action="go-page" data-page="messages">Messages</button>${state.currentUser.isAdmin ? `<a href="/admin">Admin panel</a>` : ''}<button data-action="logout">Sign out</button>` : `<button data-action="open-auth" data-mode="register">Join free</button><button data-action="open-auth" data-mode="login">Sign in</button>`}</div>
         </div>
@@ -1187,7 +1204,6 @@ function renderModal() {
 
 function renderPageContent() {
     if (creationPages.includes(state.page)) return renderCreatePage();
-    if (state.page === 'polls') return renderPollsPage();
     if (state.page === 'badges' || state.page === 'help') return renderGuidePage();
     if (state.page === 'feed') return renderMain();
     if (state.page === 'profile-edit') return renderProfileEditPage();
@@ -1235,7 +1251,7 @@ function renderApp({ updatePage = true } = {}) {
     if (state.page === 'messages' && !state.conversationsLoaded) {
         void loadConversations();
     }
-    if (['feed','launches','polls'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
+    if (['feed','launches'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
     if (state.page === 'rankings' && !state.rankingsLoaded) void loadRankings();
     if (state.page === 'community-chat' && state.currentUser && !state.groupChatLoaded && !state.groupChatLoading) void loadCommunityChat();
     if (state.page === 'community-chat') {
@@ -1343,7 +1359,7 @@ async function loadServerFeed() {
         state.posts = linked && !posts.some(post => post.id === linked.id) ? [...posts, linked] : posts;
     }
     catch (error) { state.feedError = error.message; }
-    finally { state.feedLoading = false; if (['feed','launches','polls','rankings'].includes(state.page)) renderApp(); }
+    finally { state.feedLoading = false; if (['feed','launches','rankings'].includes(state.page)) renderApp(); }
 }
 
 async function loadRankings() {
@@ -1577,8 +1593,14 @@ function showMessageError(type, message) {
 }
 
 
+function syncFeedPath({ replace = false } = {}) {
+    const path = feedPath(state.filter);
+    if (`${window.location.pathname}${window.location.search}` === path) return;
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', path);
+}
+
 function navigateTo(page, username = null) {
-    const allowed = ['home', 'feed', 'profile-edit', 'polls', 'badges', 'help', ...creationPages, 'launches', 'rankings', 'community-chat', 'messages', 'profile', 'admin', 'about', 'guidelines', 'privacy', 'terms'];
+    const allowed = ['home', 'feed', 'profile-edit', 'badges', 'help', ...creationPages, 'launches', 'rankings', 'community-chat', 'messages', 'profile', 'admin', 'about', 'guidelines', 'privacy', 'terms'];
     const nextPage = allowed.includes(page) ? page : 'home';
     if (nextPage === 'admin' && apiEnabled) {
         window.location.assign('/admin');
@@ -1593,6 +1615,11 @@ function navigateTo(page, username = null) {
     state.mobileSearch = false;
     state.modal = null;
     state.initialPostId = null;
+    state.reactionPickerViewId = null;
+    if (nextPage === 'feed') {
+        state.filter = 'all';
+        state.tag = '';
+    }
     if (nextPage === 'profile') {
         if (state.profileUsername !== nextUsername) { state.profileData = null; state.profileLoadedFor = null; }
         state.profileUsername = nextUsername;
@@ -1600,7 +1627,7 @@ function navigateTo(page, username = null) {
         state.profileUsername = null;
     }
     if (nextPage === 'community-chat' && !apiEnabled) state.groupChatLoaded = true;
-    const path = creationPages.includes(nextPage) ? `/create/${nextPage.slice(7)}` : nextPage === 'home' ? '/' : nextPage === 'profile-edit' ? '/settings/profile' : nextPage === 'profile' ? `/u/${encodeURIComponent(nextUsername)}` : `/${nextPage}`;
+    const path = creationPages.includes(nextPage) ? `/create/${nextPage.slice(7)}` : nextPage === 'home' ? '/' : nextPage === 'feed' ? feedPath(state.filter) : nextPage === 'profile-edit' ? '/settings/profile' : nextPage === 'profile' ? `/u/${encodeURIComponent(nextUsername)}` : `/${nextPage}`;
     window.history.pushState({}, '', path);
     renderApp();
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1623,17 +1650,16 @@ function closeModal() {
 
 function setFilter(filter) {
     const changingPage = state.page !== 'feed';
-    if (changingPage) {
-        state.page = 'feed';
-        state.profileUsername = null;
-        state.initialPostId = null;
-        window.history.pushState({}, '', '/feed');
-    }
-    state.filter = ['all', 'discussion', 'question', 'poll', 'launch', 'saved'].includes(filter) ? filter : 'all';
+    state.page = 'feed';
+    state.profileUsername = null;
+    state.initialPostId = null;
+    state.reactionPickerViewId = null;
+    state.filter = FEED_FILTERS.includes(filter) ? filter : 'all';
     state.tag = '';
     state.mobileMenu = false;
+    syncFeedPath();
     if (changingPage) renderApp();
-    renderHeaderAndFeedState();
+    else renderHeaderAndFeedState();
 }
 
 function renderHeaderAndFeedState() {
@@ -1644,6 +1670,7 @@ function renderHeaderAndFeedState() {
     const header = document.querySelector('.site-header');
     if (header) { header.outerHTML = renderHeader(); renderedRegions.delete('header-region'); }
     renderFeed();
+    updateMetadata(state, apiEnabled);
     if (state.filter !== 'all') {
         document.querySelector('#community')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -1795,7 +1822,8 @@ async function createPost(form) {
         state.tag = '';
         state.search = '';
         state.modal = null;
-        window.history.pushState({}, '', type === 'launch' ? '/launches' : '/feed');
+        state.reactionPickerViewId = null;
+        window.history.pushState({}, '', type === 'launch' ? '/launches' : feedPath(state.filter));
         persistDemo();
         renderApp();
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1824,8 +1852,8 @@ function updatePostCopies(id, values) {
         if (String(post.sourcePost?.id) === String(id)) Object.assign(post.sourcePost, values);
     }
 }
-function setReactionBusy(id, busy, kind = 'react') {
-    root.querySelectorAll(`[data-action="${kind}"]`).forEach(button => {
+function setReactionBusy(id, busy) {
+    root.querySelectorAll('.post-reactions [data-post-id]').forEach(button => {
         if (button.dataset.postId === String(id)) {
             button.disabled = busy;
             button.setAttribute('aria-busy', String(busy));
@@ -1839,14 +1867,44 @@ function refreshReactionViews(post) {
         const focused = group.contains(document.activeElement) ? document.activeElement : null;
         const action = focused?.dataset.action;
         const reaction = focused?.dataset.reaction;
-        const template = document.createElement('template'); template.innerHTML = renderReactions(post);
+        const viewId = group.dataset.reactionViewId || post.id;
+        const template = document.createElement('template'); template.innerHTML = renderReactions(post, viewId);
         const next = template.content.firstElementChild;
         group.replaceWith(next);
         if (action) next.querySelector(reaction ? `[data-reaction="${reaction}"]` : `[data-action="${action}"]`)?.focus({preventScroll:true});
     });
     renderedRegions.delete('page-content');
     // A later card reconciliation must not mistake the original markup for current state.
-    root.querySelectorAll('.post-card').forEach(card => { if (card.querySelector(`[data-action="react"]`)?.dataset.postId === String(post.id)) delete card.renderedHTML; });
+    root.querySelectorAll('.post-card').forEach(card => {
+        if ([...card.querySelectorAll('.post-reactions [data-post-id]')].some(button => button.dataset.postId === String(post.id))) delete card.renderedHTML;
+    });
+}
+
+function closeReactionPicker({ returnFocus = false } = {}) {
+    const viewId = state.reactionPickerViewId;
+    if (!viewId) return false;
+    const group = [...root.querySelectorAll('.post-reactions')].find(item => item.dataset.reactionViewId === String(viewId));
+    const post = group ? findPostById(group.querySelector('[data-post-id]')?.dataset.postId) : null;
+    state.reactionPickerViewId = null;
+    if (post) refreshReactionViews(post);
+    if (returnFocus) {
+        const trigger = [...root.querySelectorAll('[data-action="toggle-reactions"]')].find(button => button.dataset.reactionViewId === String(viewId));
+        trigger?.focus({ preventScroll: true });
+    }
+    return true;
+}
+
+function toggleReactionPicker(postId, viewId) {
+    const post = findPostById(postId);
+    if (!post) return;
+    if (state.reactionPickerViewId === String(viewId)) {
+        state.reactionPickerViewId = null;
+        refreshReactionViews(post);
+        return;
+    }
+    closeReactionPicker();
+    state.reactionPickerViewId = String(viewId);
+    refreshReactionViews(post);
 }
 
 function refreshPostView() {
@@ -1917,13 +1975,13 @@ async function toggleLike(postId) {
     if (!state.currentUser) return openAuth('register');
     const post = findPostById(postId);
     if (!post || state.pendingLikes.has(String(postId))) return;
-    state.pendingLikes.add(String(postId)); setReactionBusy(postId, true, 'like');
+    state.pendingLikes.add(String(postId)); setReactionBusy(postId, true);
     try {
         const result = apiEnabled ? await apiRequest(`/api/posts/${encodeURIComponent(postId)}/like`, 'POST', {}) : {liked:!post.liked, likes:Math.max(0, Number(post.likes || 0) + (post.liked ? -1 : 1))};
         updatePostCopies(postId, {liked:result.liked, likes:Number(result.likes)});
         persistDemo(); refreshReactionViews(post);
     } catch (error) { showToast(error.message); }
-    finally { state.pendingLikes.delete(String(postId)); setReactionBusy(postId, false, 'like'); }
+    finally { state.pendingLikes.delete(String(postId)); setReactionBusy(postId, false); }
 }
 
 async function reactToPost(postId, reaction) {
@@ -1971,10 +2029,11 @@ async function repostPost(postId) {
         if (state.page !== 'feed') {
             state.page = 'feed';
             state.initialPostId = null;
-            window.history.pushState({}, '', '/feed');
         }
         state.filter = 'all';
         state.tag = '';
+        state.reactionPickerViewId = null;
+        syncFeedPath();
         persistDemo();
         renderApp();
         showToast('Reposted.');
@@ -2376,6 +2435,7 @@ root.addEventListener('click', async (event) => {
         state.mobileSearch = false;
         state.initialPostId = String(target.dataset.postId || '');
         state.filter = 'all'; state.tag = '';
+        state.reactionPickerViewId = null;
         window.history.pushState({}, '', `/posts/${encodeURIComponent(state.initialPostId)}`);
         renderApp();
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2439,30 +2499,37 @@ root.addEventListener('click', async (event) => {
         if (root.querySelectorAll('.poll-option-fields input').length >= 5) target.hidden = true;
         return;
     }
-    if (action === 'filter') return setFilter(target.dataset.filter || 'all');
+    if (action === 'filter') {
+        event.preventDefault();
+        return setFilter(target.dataset.filter || 'all');
+    }
     if (action === 'tag') {
-        if (state.page !== 'feed') {
-            state.page = 'feed';
-            window.history.pushState({}, '', '/feed');
-        }
+        const changingPage = state.page !== 'feed';
+        state.page = 'feed';
+        state.profileUsername = null;
         state.filter = 'all';
         state.initialPostId = null;
         state.tag = target.dataset.tag || '';
-        renderHeaderAndFeedState();
+        state.reactionPickerViewId = null;
+        syncFeedPath();
+        if (changingPage) renderApp();
+        else renderHeaderAndFeedState();
         return;
     }
     if (action === 'clear-filter') {
-        if (state.page !== 'feed') {
-            state.page = 'feed';
-            window.history.pushState({}, '', '/feed');
-        }
+        const changingPage = state.page !== 'feed';
+        state.page = 'feed';
+        state.profileUsername = null;
         state.initialPostId = null;
         state.filter = 'all';
         state.tag = '';
         state.search = '';
+        state.reactionPickerViewId = null;
+        syncFeedPath();
         const search = document.querySelector('[data-search]');
         if (search) search.value = '';
-        renderHeaderAndFeedState();
+        if (changingPage) renderApp();
+        else renderHeaderAndFeedState();
         return;
     }
     if (action === 'toggle-menu') {
@@ -2503,8 +2570,15 @@ root.addEventListener('click', async (event) => {
         }
         return;
     }
-    if (action === 'like') return toggleLike(target.dataset.postId);
-    if (action === 'react') return reactToPost(target.dataset.postId, target.dataset.reaction);
+    if (action === 'toggle-reactions') return toggleReactionPicker(target.dataset.postId, target.dataset.reactionViewId);
+    if (action === 'like') {
+        closeReactionPicker({ returnFocus: true });
+        return toggleLike(target.dataset.postId);
+    }
+    if (action === 'react') {
+        closeReactionPicker({ returnFocus: true });
+        return reactToPost(target.dataset.postId, target.dataset.reaction);
+    }
     if (action === 'repost') return repostPost(target.dataset.postId);
     if (action === 'vote') return vote(target.dataset.postId, target.dataset.optionIndex);
     if (action === 'launch-vote') return voteLaunch(target.dataset.postId, target.dataset.vote);
@@ -2663,6 +2737,7 @@ document.addEventListener('keydown', (event) => {
         closeModal();
         return;
     }
+    if (closeReactionPicker({ returnFocus: true })) return;
     if (state.mobileSearch) {
         state.mobileSearch = false;
         const header = document.querySelector('.site-header');
@@ -2684,6 +2759,7 @@ document.addEventListener('click', (event) => {
         state.menuPostId = null;
         refreshPostView();
     }
+    if (state.reactionPickerViewId && !event.target.closest('.reaction-control')) closeReactionPicker();
     if (!event.target.closest('.nav-search, [data-action="toggle-search"]')) closeSearchDropdown();
 });
 
@@ -2697,6 +2773,10 @@ window.addEventListener('popstate', () => {
     state.page = page;
     state.profileUsername = page === 'profile' ? parts[1] : null;
     state.initialPostId = parts[0] === 'posts' ? parts[1] : parts[0] === 'brands' ? state.posts.find(post => post.brand?.slug === parts[1])?.id || null : null;
+    const legacyPollPath = ['models', 'polls'].includes(parts[0]);
+    state.filter = page === 'feed' ? (legacyPollPath ? 'poll' : currentFeedFilter()) : 'all';
+    if (legacyPollPath) syncFeedPath({ replace: true });
+    state.reactionPickerViewId = null;
     state.modal = null;
     state.mobileMenu = false;
     state.mobileSearch = false;
