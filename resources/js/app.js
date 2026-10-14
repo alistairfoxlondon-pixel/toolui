@@ -7,7 +7,6 @@ import { ICON_PATHS, ICON_PATHS_FILLED } from './icon-paths.js';
 import { checkMessage } from './moderation.js';
 import { avatarAsset, avatarPath, avatarResolutionAttributes } from './avatars.js';
 import REACTIONS from '../data/reactions.json';
-import REACTION_ASSETS from '../data/reaction-assets.json';
 import CHARACTER_AVATARS from '../data/character-avatars.json';
 import { renderUploadField, syncUpload, validateUpload } from './uploads.js';
 import { updateMetadata } from './metadata.js';
@@ -72,7 +71,7 @@ const seedPosts = [
         title: 'I finally shared my first draft',
         body: 'Posted the rough version instead of polishing forever. The feedback that afternoon was worth it.',
         authorName: 'Maya Chen',
-        author: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/fluent-fox.png' },
+        author: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/pixel-fox.svg' },
         role: 'Product designer',
         tone: 'tone-coral',
         createdAt: '38 min ago',
@@ -89,7 +88,7 @@ const seedPosts = [
         title: 'Goodside, a slower kind of city guide',
         body: 'A small guide to independent places in your neighborhood.',
         authorName: 'Ravi Patel',
-        author: { id: 'demo-ravipatel', name: 'Ravi Patel', username: 'ravipatel', avatarUrl: '/avatars/fluent-robot.png' },
+        author: { id: 'demo-ravipatel', name: 'Ravi Patel', username: 'ravipatel', avatarUrl: '/avatars/robo-ravi.svg' },
         role: 'Weekend maker',
         tone: 'tone-mint',
         createdAt: '2 hours ago',
@@ -112,7 +111,7 @@ const seedPosts = [
         title: 'How do you keep an AI-generated codebase maintainable?',
         body: 'I’m trying smaller prompts and tests before each change. What works for you?',
         authorName: 'Priya Rahman',
-        author: { id: 'demo-priyar', name: 'Priya Rahman', username: 'priyar', avatarUrl: '/avatars/fluent-owl.png' },
+        author: { id: 'demo-priyar', name: 'Priya Rahman', username: 'priyar', avatarUrl: '/avatars/byte-bard.svg' },
         role: 'AI engineer',
         tone: 'tone-lilac',
         createdAt: '3 hours ago',
@@ -132,7 +131,7 @@ const seedPosts = [
         title: 'What takes the most energy when you start?',
         body: '',
         authorName: 'Noah Williams',
-        author: { id: 'demo-noahbuilds', name: 'Noah Williams', username: 'noahbuilds', avatarUrl: '/avatars/fluent-astronaut.png' },
+        author: { id: 'demo-noahbuilds', name: 'Noah Williams', username: 'noahbuilds', avatarUrl: '/avatars/orbit-ollie.svg' },
         role: 'Creative technologist',
         tone: 'tone-sky',
         createdAt: '4 hours ago',
@@ -152,7 +151,7 @@ const seedPosts = [
         title: 'One small build, one useful lesson',
         body: 'A smaller scope and a real deadline helped me finish. What helped you ship this week?',
         authorName: 'Ken Alvarez',
-        author: { id: 'demo-kena', name: 'Ken Alvarez', username: 'kenalvarez', avatarUrl: '/avatars/fluent-ninja.png' },
+        author: { id: 'demo-kena', name: 'Ken Alvarez', username: 'kenalvarez', avatarUrl: '/avatars/noodle-ninja.svg' },
         role: 'Full stack dev',
         tone: 'tone-indigo',
         createdAt: '6 hours ago',
@@ -228,16 +227,26 @@ function normalizePost(post) {
 const storedUser = apiEnabled ? null : readStorage(STORAGE.user);
 const storedPosts = apiEnabled ? null : readStorage(STORAGE.posts);
 const routeParts = parseRoute(window.location.pathname);
+const FEED_FILTERS = ['all', 'discussion', 'question', 'launch', 'poll', 'saved'];
 const routePages = {
     feed: 'feed', posts: 'feed', brands: 'feed', settings: 'profile-edit',
-    launches: 'launches', models: 'polls', polls: 'polls', badges: 'badges', help: 'help', rankings: 'rankings', 'community-chat': 'community-chat',
+    launches: 'launches', models: 'feed', polls: 'feed', badges: 'badges', help: 'help', rankings: 'rankings', 'community-chat': 'community-chat',
     messages: 'messages', about: 'about', guidelines: 'guidelines', privacy: 'privacy',
     terms: 'terms', admin: 'admin', u: 'profile',
 };
 const creationPages = ['create-post', 'create-question', 'create-poll', 'create-launch'];
 function pageForRoute(parts) { return parts[0] === 'create' && creationPages.includes(`create-${parts[1]}`) ? `create-${parts[1]}` : routePages[parts[0]] || 'home'; }
+function currentFeedFilter() {
+    const filter = new URLSearchParams(window.location.search).get('filter') || 'all';
+    return FEED_FILTERS.includes(filter) ? filter : 'all';
+}
+function feedPath(filter = 'all') {
+    const safeFilter = FEED_FILTERS.includes(filter) ? filter : 'all';
+    return safeFilter === 'all' ? '/feed' : `/feed?filter=${encodeURIComponent(safeFilter)}`;
+}
+const legacyPollRoute = ['models', 'polls'].includes(routeParts[0]);
+if (legacyPollRoute) window.history.replaceState({}, '', feedPath('poll'));
 const pathPage = pageForRoute(routeParts);
-if (routeParts[0] === 'models') window.history.replaceState({}, '', '/polls');
 
 const state = {
     currentUser: config.currentUser || storedUser || null,
@@ -256,7 +265,7 @@ const state = {
     conversations: [],
     conversationsLoaded: false,
     selectedMessageUser: null,
-    groupMessages: apiEnabled ? [] : readStorage('vibedock-preview-chat', [{ id: 1, body: 'Welcome to the community chat.', sentByMe: false, createdAt: 'today', user: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/fluent-unicorn.png' } }]),
+    groupMessages: apiEnabled ? [] : readStorage('vibedock-preview-chat', [{ id: 1, body: 'Welcome to the community chat.', sentByMe: false, createdAt: 'today', user: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/neon-gecko.svg' } }]),
     groupChatLoaded: false,
     groupChatLoading: false,
     groupChatTimer: null,
@@ -265,6 +274,7 @@ const state = {
     pendingLaunchVotes: new Set(),
     pendingReactions: new Set(),
     pendingLikes: new Set(),
+    reactionPickerViewId: null,
     messagePeer: null,
     messages: [],
     messagesLoading: false,
@@ -275,7 +285,7 @@ const state = {
     postRequests: new Set(), postLoading: new Set(),
     savedIds: (readStorage('vibedock-preview-saved', []) || []).map(String),
     menuPostId: null,
-    filter: 'all',
+    filter: pathPage === 'feed' ? (legacyPollRoute ? 'poll' : currentFeedFilter()) : 'all',
     search: '',
     searchResults: { users: [], posts: [] },
     searchResultsLoading: false,
@@ -441,7 +451,6 @@ function renderHeader() {
     const pages = [
         ['home', 'home', 'Home'],
         ['feed', 'forum', 'Feed'],
-        ['polls', 'bar_chart', 'Polls'],
         ['launches', 'rocket_launch', 'Launches'],
         ['rankings', 'monitoring', 'Rankings'],
         ['community-chat', 'group', 'Chat'],
@@ -489,10 +498,10 @@ function renderHero() {
 
 function renderLanding() {
     return `<main class="landing-page">${renderHero()}
-        <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/polls" data-action="go-page" data-page="polls">${icon('bar_chart',20)} Ask the community</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
+        <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/feed?filter=poll" data-action="filter" data-filter="poll">${icon('bar_chart',20)} Ask the community</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
         <section class="feature-grid" aria-label="What you can do on VibeDock">
             <article class="feature-card feature-launch"><div class="feature-copy"><span class="feature-number">01 / LAUNCH</span><h3>Your side project. <br>Its first supporters.</h3><p>Launch your build. Find its first fans. Claim a home for your brand.</p><a class="feature-link" href="/launches" data-action="go-page" data-page="launches">Explore launches ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/launch-studio.svg" alt="An app taking shape in a maker’s launch studio" width="640" height="460" loading="lazy" decoding="async"></div></article>
-            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="${avatarPath('fluent-astronaut', 'large')}" alt="3D astronaut avatar" width="140" height="140" loading="lazy"><img src="${avatarPath('fluent-owl', 'large')}" alt="3D owl avatar" width="120" height="120" loading="lazy"><img src="${avatarPath('fluent-cat-face', 'large')}" alt="3D cat avatar" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
+            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="${avatarPath('orbit-ollie', 'large')}" alt="Orbit Ollie illustrated avatar" width="140" height="140" loading="lazy"><img src="${avatarPath('byte-bard', 'large')}" alt="Byte Bard illustrated avatar" width="120" height="120" loading="lazy"><img src="${avatarPath('cosmic-cat', 'large')}" alt="Cosmic Cat illustrated avatar" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
             <article class="feature-card feature-badges"><div class="feature-copy"><span class="feature-number">03 / BELONG</span><h3>A little activity.<br>A lot to show.</h3><p>Share, help, and launch. Earn badges along the way.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">Meet your milestones ${icon('arrow_forward',18)}</a></div><div class="feature-art badge-scene"><span class="display-badge">${icon('rocket_launch',48)}</span><span class="display-badge">${icon('favorite',36)}</span><span class="display-badge">${icon('auto_awesome',36)}</span><small>Made of small wins.</small></div></article>
             <article class="feature-card feature-feedback"><div class="feature-copy"><span class="feature-number">04 / LEARN</span><h3>Less guesswork. <br>More “aha”.</h3><p>Show your progress. Ask the tricky question. Run a poll and let real opinions shape your next move.</p><a class="feature-link" href="/feed" data-action="go-page" data-page="feed">Join the conversation ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/feedback-board.svg" alt="An illustrated community poll and conversation bubble" width="440" height="340" loading="lazy" decoding="async"></div></article>
         </section>
@@ -593,12 +602,31 @@ function renderCommentForm(post) {
     return `<form class="comment-form" data-form="comment" data-post-id="${escapeHtml(post.id)}">${avatar(state.currentUser?.name || 'You', toneFor(state.currentUser?.name || 'You'), 'avatar-mini', state.currentUser?.avatarUrl)}<label class="visually-hidden" for="comment-${escapeHtml(post.id)}">Write a reply</label><input id="comment-${escapeHtml(post.id)}" name="body" maxlength="2000" placeholder="Write a reply…" required><button type="submit" aria-label="Post reply">${icon('send', 17)}</button></form>`;
 }
 
-function reactionImage(key) {
-    return `<img class="reaction-art" src="${REACTION_ASSETS[key]}" width="24" height="24" alt="" loading="lazy" decoding="async" aria-hidden="true">`;
+const REACTION_OPTIONS = [
+    { key: 'love', label: 'Love', action: 'like' },
+    ...REACTIONS.map(reaction => ({ ...reaction, action: 'react' })),
+];
+// Familiar Material Symbols keep the reaction language precise, legible and consistent.
+const REACTION_ICON_NAMES = {
+    love: 'favorite', celebrate: 'celebration', helpful: 'thumb_up',
+    support: 'volunteer_activism', laugh: 'sentiment_very_satisfied', wow: 'auto_awesome',
+};
+function reactionIcon(key, size = 20, filled = false) {
+    return icon(REACTION_ICON_NAMES[key] || 'add_reaction', size, 'reaction-icon', filled && ['love', 'helpful'].includes(key));
 }
-function renderReactions(post) {
+function renderReactions(post, viewId = post.id) {
     const counts = post.reactions || {};
-    return `<div class="post-reactions" role="group" aria-label="React to this post"><button class="post-action reaction-action love-reaction ${post.liked ? 'is-liked' : ''}" data-action="like" data-post-id="${escapeHtml(post.id)}" aria-pressed="${Boolean(post.liked)}" aria-label="Love" title="${post.liked ? 'Remove love' : 'Love this post'}">${reactionImage('love')}<span class="reaction-label">Love</span><span class="reaction-count">${Number(post.likes || 0) || ''}</span></button>${REACTIONS.map(({key,label}) => `<button class="post-action reaction-action ${post.myReaction === key ? 'is-selected' : ''}" data-action="react" data-reaction="${key}" data-post-id="${escapeHtml(post.id)}" aria-pressed="${post.myReaction === key}" aria-label="${label}" title="${post.myReaction === key ? 'Remove' : 'React with'} ${label.toLowerCase()}">${reactionImage(key)}<span class="reaction-label">${label}</span><span class="reaction-count">${Number(counts[key] || 0) || ''}</span></button>`).join('')}</div>`;
+    const selected = REACTION_OPTIONS.find(option => option.key === post.myReaction)
+        || (post.liked ? REACTION_OPTIONS[0] : null);
+    const pickerOpen = state.reactionPickerViewId === String(viewId);
+    const pickerId = `reaction-picker-${encodeURIComponent(String(viewId))}`;
+    const total = Number(post.likes || 0) + REACTIONS.reduce((sum, option) => sum + Number(counts[option.key] || 0), 0);
+    const triggerLabel = selected ? `Change reaction, current ${selected.label}` : 'Choose a reaction';
+    return `<div class="post-reactions reaction-control" data-reaction-view-id="${escapeHtml(viewId)}"><button class="post-action reaction-trigger ${selected ? `is-selected reaction-${selected.key}` : ''}" data-action="toggle-reactions" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}" aria-expanded="${pickerOpen}" aria-haspopup="true" aria-controls="${pickerId}" aria-label="${pickerOpen ? 'Close reaction options' : triggerLabel}">${reactionIcon(selected?.key || 'add_reaction', 20, Boolean(selected))}<span class="post-utility-label">React</span><span class="reaction-count">${total || ''}</span></button>${pickerOpen ? `<div class="reaction-picker" id="${pickerId}" role="group" aria-label="Choose a reaction"><p class="reaction-picker-heading">React to this post</p><div class="reaction-choice-grid">${REACTION_OPTIONS.map((option) => {
+        const isSelected = option.key === 'love' ? Boolean(post.liked) : post.myReaction === option.key;
+        const actionAttributes = option.action === 'react' ? ` data-reaction="${option.key}"` : '';
+        return `<button class="reaction-choice reaction-${option.key} ${isSelected ? 'is-selected' : ''}" data-action="${option.action}" data-post-id="${escapeHtml(post.id)}" data-reaction-view-id="${escapeHtml(viewId)}"${actionAttributes} aria-pressed="${isSelected}" aria-label="${isSelected ? `Remove ${option.label.toLowerCase()}` : `React with ${option.label.toLowerCase()}`}"><span class="reaction-choice-icon">${reactionIcon(option.key, 21, isSelected)}</span><span class="reaction-choice-label">${escapeHtml(option.label)}</span></button>`;
+    }).join('')}</div></div>` : ''}</div>`;
 }
 
 function renderPost(post) {
@@ -645,8 +673,8 @@ function renderPost(post) {
         </div>
         ${renderCommentPreview(actionPost)}
         <div class="post-footer">
-            ${renderReactions(actionPost)}
             <div class="post-actions">
+                ${renderReactions(actionPost, post.id)}
                 <button class="post-action" data-action="comment-toggle" data-post-id="${escapeHtml(actionPost.id)}" aria-expanded="${state.commentingId === actionPost.id}" aria-label="Comment">${icon('comment', 20)}<span class="post-utility-label">Reply</span><span>${comments || ''}</span></button>
                 <button class="post-action" data-action="repost" data-post-id="${escapeHtml(actionPost.id)}" aria-label="Repost" title="Repost">${icon('repeat', 20)}<span class="post-utility-label">Repost</span><span>${Number(actionPost.repostsCount || 0) || ''}</span></button>
                 <button class="post-action share-action" data-action="share" data-post-id="${escapeHtml(post.id)}" aria-label="Share" title="Share">${icon('share', 19)}<span class="post-utility-label">Share</span></button>
@@ -696,8 +724,8 @@ function renderRightRail() {
             <h3>Made something?</h3>
             <button class="btn btn-outline btn-small" data-action="open-compose" data-type="launch">Share your project ${icon('arrow_forward', 17)}</button>
         </div>
-        <button class="rail-card toolkit-card" data-action="go-page" data-page="polls">
-            ${illustration('toolkit')}<span>Community polls</span>${icon('arrow_forward', 18)}
+        <button class="rail-card toolkit-card" data-action="filter" data-filter="poll">
+            ${illustration('toolkit')}<span>Browse community polls</span>${icon('arrow_forward', 18)}
         </button>
         <div class="community-note">${icon('group', 22)}<button data-action="go-page" data-page="guidelines">Community guidelines ${icon('arrow_forward', 14)}</button></div>
         <div class="right-footer"><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button><span>© ${new Date().getFullYear()} VibeDock</span></div>
@@ -705,14 +733,8 @@ function renderRightRail() {
 }
 
 function renderFeedSection() {
-    const filters = [
-        ['all', 'All'],
-        ['discussion', 'Discussions'],
-        ['question', 'Questions'],
-        ['launch', 'Launches'],
-        ['poll', 'Polls'],
-        ['saved', 'Saved'],
-    ];
+    const labels = { all: 'All', discussion: 'Discussions', question: 'Questions', launch: 'Launches', poll: 'Polls', saved: 'Saved' };
+    const filters = FEED_FILTERS.map(filter => [filter, labels[filter]]);
     return `<main class="feed-column" id="community-feed">
         <div class="feed-toolbar">
             <label class="mobile-feed-filter"><span class="visually-hidden">Filter posts</span><select data-feed-filter>${filters.map(([filter, label]) => `<option value="${filter}" ${state.filter === filter ? 'selected' : ''}>${label === 'All' ? 'All posts' : label}</option>`).join('')}</select></label>
@@ -875,10 +897,6 @@ function renderMemberBadges(user) {
     const badges = apiEnabled ? user.badges || [] : previewBadges(user);
     return `<div class="member-badges" aria-label="Member badges">${badges.map(badge => `<a href="/badges" data-action="go-page" data-page="badges" class="member-badge ${badge.source === 'admin' ? 'admin-awarded' : ''}" title="${badge.source === 'admin' ? 'Awarded by an administrator' : 'Earned through community activity'}">${icon(BADGES.find(item => item.key === badge.key)?.glyph || 'star',16)}${escapeHtml(badge.label)}</a>`).join('')}${!badges.length ? '<a class="badge-empty" href="/badges" data-action="go-page" data-page="badges">Your next contribution could earn a badge →</a>' : ''}</div>`;
 }
-function renderPollsPage() {
-    const polls = state.posts.filter(post => post.type === 'poll' && !post.isHidden);
-    return `<main class="route-main polls-page"><section class="page-intro">${illustration('conversation','page-art')}<div><span class="route-eyebrow">LET THE COMMUNITY WEIGH IN</span><h1>Real people. Real opinions.</h1><p>Compare tools, test an idea, or decide what to build next.</p></div><button class="btn btn-primary" data-action="open-compose" data-type="poll">${icon('add',20)} Create a poll</button></section>${state.feedError ? `<p class="feed-status" role="alert">${escapeHtml(state.feedError)} <button data-action="reload-feed">Try again</button></p>` : ''}<section class="polls-list">${!state.feedLoaded || state.feedLoading ? '<p role="status">Loading polls…</p>' : polls.length ? polls.map(renderPost).join('') : '<div class="route-empty"><h2>Be the first to ask</h2><p>Make your next decision together.</p><button class="btn btn-outline" data-action="open-compose" data-type="poll">Start a poll</button></div>'}</section></main>`;
-}
 function renderGuidePage() {
     if (state.page === 'badges') return `<main class="route-main guide-page"><header class="create-heading"><span class="section-kicker">SMALL STEPS. WELL EARNED.</span><h1>Your activity tells a story.</h1><p>Badges recognize what you bring to the dock.</p></header><div class="badge-guide-grid">${BADGES.map(badge => `<article class="badge-guide-card"><span class="badge-medallion ${badge.source === 'admin' ? 'admin-awarded' : ''}">${icon(badge.glyph,30)}</span><small>${badge.source === 'admin' ? 'ADMIN AWARDED' : 'ACTIVITY MILESTONE'}</small><h2>${badge.label}</h2><p>${badge.description}</p></article>`).join('')}</div><section class="guide-note"><h2>Earned, not bought.</h2><p>Activity badges reflect your current visible contributions. Removed or hidden content doesn’t count. Admin awards can be granted or revoked by the site team.</p><p>A business verification tick is separate: it indicates an admin has reviewed brand ownership, not that a project is endorsed.</p><a class="feature-link" href="/create/post" data-action="open-compose" data-type="discussion">Share something ${icon('arrow_forward',18)}</a></section></main>`;
     return `<main class="route-main guide-page"><header class="create-heading"><span class="section-kicker">A QUICK LOOK AROUND</span><h1>Find your place on the dock.</h1><p>Make something. Share it. Keep going together.</p></header><div class="help-feature-grid">${[
@@ -886,7 +904,7 @@ function renderGuidePage() {
         ['question','chat_bubble','Ask a question','Get a fresh perspective from fellow makers.'],
         ['poll','bar_chart','Run a poll','Compare AI models or get feedback on your next idea.'],
         ['launch','rocket_launch','Launch a project','A dedicated home for your build and your brand.'],
-    ].map(([type,glyph,title,body]) => `<a class="help-feature" href="/create/${type}" data-action="open-compose" data-type="${type === 'post' ? 'discussion' : type}">${icon(glyph,28)}<h2>${title}</h2><p>${body}</p><span>Get started →</span></a>`).join('')}</div><section class="guide-faq"><h2>A few useful answers</h2><details open><summary>How do brand claims and green ticks work?</summary><p>Add a unique brand handle when you launch and confirm you’re authorized to represent it. Your handle is reserved when the launch is published. An administrator reviews ownership before granting the green “Verified business” tick. Claims aren’t trademark registration, and verification isn’t an endorsement. An admin can revoke verification.</p></details><details><summary>How can I earn a badge?</summary><p>Share posts, launch projects, start polls, or join conversations. Activity badges appear on your profile automatically; admins can also award special recognition.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">View all badges →</a></details><details><summary>Can I sign in with Google or Facebook?</summary><p>Yes, on the live site once social sign-in is configured. Use “Continue with Google” or “Continue with Facebook” on either sign-in or registration. Email sign-in is always available. The standalone demo cannot connect to these providers.</p></details><details><summary>Where can I change my avatar?</summary><p>Open your profile, choose Edit profile, and select a 3D character or upload your own photo. Our character library uses Microsoft Fluent Emoji artwork under the MIT license.</p></details><details><summary>How do I report an issue or unsafe content?</summary><p>Use the post’s More options menu or the message’s options to report content to the site team. You can also block members. Never share account credentials or private API keys in posts.</p><a class="feature-link" href="/guidelines" data-action="go-page" data-page="guidelines">Read the guidelines →</a></details></section></main>`;
+    ].map(([type,glyph,title,body]) => `<a class="help-feature" href="/create/${type}" data-action="open-compose" data-type="${type === 'post' ? 'discussion' : type}">${icon(glyph,28)}<h2>${title}</h2><p>${body}</p><span>Get started →</span></a>`).join('')}</div><section class="guide-faq"><h2>A few useful answers</h2><details open><summary>How do brand claims and green ticks work?</summary><p>Add a unique brand handle when you launch and confirm you’re authorized to represent it. Your handle is reserved when the launch is published. An administrator reviews ownership before granting the green “Verified business” tick. Claims aren’t trademark registration, and verification isn’t an endorsement. An admin can revoke verification.</p></details><details><summary>How can I earn a badge?</summary><p>Share posts, launch projects, start polls, or join conversations. Activity badges appear on your profile automatically; admins can also award special recognition.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">View all badges →</a></details><details><summary>Can I sign in with Google or Facebook?</summary><p>Yes, on the live site once social sign-in is configured. Use “Continue with Google” or “Continue with Facebook” on either sign-in or registration. Email sign-in is always available. The standalone demo cannot connect to these providers.</p></details><details><summary>Where can I change my avatar?</summary><p>Open your profile, choose Edit profile, and select an original VibeDock character or upload your own photo. Your pick is just for expression, not a profile label.</p></details><details><summary>How do I report an issue or unsafe content?</summary><p>Use the post’s More options menu or the message’s options to report content to the site team. You can also block members. Never share account credentials or private API keys in posts.</p><a class="feature-link" href="/guidelines" data-action="go-page" data-page="guidelines">Read the guidelines →</a></details></section></main>`;
 }
 function renderRecognitionAdmin() {
     const members = new Map(state.posts.filter(post=>post.author?.id).map(post=>[String(post.author.id),post.author]));
@@ -1047,7 +1065,7 @@ function renderFooter() {
     return `<footer class="site-footer"><div class="footer-shell">
         <div class="footer-main">
             <div class="footer-brand-block"><a class="brand footer-brand" href="/" data-action="go-page" data-page="home">${brandMark()}<span class="brand-word">vibe<span>dock</span></span></a><p>A home for vibe coders.</p></div>
-            <div class="footer-column"><strong>Explore</strong><button data-action="go-page" data-page="feed">Feed</button><button data-action="go-page" data-page="polls">Polls</button><button data-action="go-page" data-page="launches">Launches</button><button data-action="go-page" data-page="rankings">Rankings</button><button data-action="go-page" data-page="community-chat">Community chat</button></div>
+            <div class="footer-column"><strong>Explore</strong><button data-action="go-page" data-page="feed">Feed</button><button data-action="filter" data-filter="poll">Polls in the feed</button><button data-action="go-page" data-page="launches">Launches</button><button data-action="go-page" data-page="rankings">Rankings</button><button data-action="go-page" data-page="community-chat">Community chat</button></div>
             <div class="footer-column"><strong>Information</strong><button data-action="go-page" data-page="help">Help & features</button><button data-action="go-page" data-page="badges">Badges</button><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="guidelines">Guidelines</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button></div>
             <div class="footer-column"><strong>Account</strong>${state.currentUser ? `<button data-action="open-my-profile">Your profile</button><button data-action="go-page" data-page="messages">Messages</button>${state.currentUser.isAdmin ? `<a href="/admin">Admin panel</a>` : ''}<button data-action="logout">Sign out</button>` : `<button data-action="open-auth" data-mode="register">Join free</button><button data-action="open-auth" data-mode="login">Sign in</button>`}</div>
         </div>
@@ -1118,37 +1136,34 @@ function renderProfileEditPage() {
     if (!state.currentUser) return `<main class="route-main"><section class="route-empty"><h1>Edit profile</h1><button class="btn btn-primary" data-action="open-auth" data-mode="login">Sign in</button></section></main>`;
     const user=state.currentUser;
     return `<main class="route-main profile-edit-page"><header class="settings-heading"><div><span class="section-kicker">Make yourself at home</span><h1>Your profile, your personality.</h1></div><button class="btn btn-outline" data-action="open-my-profile">View profile ${icon('arrow_forward',18)}</button></header>
-    <form data-form="profile" class="profile-settings-form"><aside class="settings-preview"><div class="profile-preview-cover cover-${escapeHtml(user.coverChoice||'aurora')}"></div><img class="settings-avatar" src="${escapeHtml(avatarAsset(user.avatarUrl)?.large || safeImageUrl(user.avatarUrl) || avatarPath('fluent-astronaut', 'large'))}" alt="Your selected avatar" width="112" height="112" decoding="async" loading="eager"><h2 data-profile-name>${escapeHtml(user.name)}</h2><p>@${escapeHtml(user.username)}</p><div class="settings-section-links"><a href="#profile-basics">The basics</a><a href="#profile-style">Your look</a><a href="#profile-skills">Your skills</a></div><button type="submit" class="btn btn-primary">Save changes ${icon('check',18)}</button></aside>
+    <form data-form="profile" class="profile-settings-form"><aside class="settings-preview"><div class="profile-preview-cover cover-${escapeHtml(user.coverChoice||'aurora')}"></div><img class="settings-avatar" src="${escapeHtml(avatarAsset(user.avatarUrl)?.large || safeImageUrl(user.avatarUrl) || avatarPath('orbit-ollie', 'large'))}" alt="Your selected avatar" width="112" height="112" decoding="async" loading="eager"><h2 data-profile-name>${escapeHtml(user.name)}</h2><p>@${escapeHtml(user.username)}</p><div class="settings-section-links"><a href="#profile-basics">The basics</a><a href="#profile-style">Your look</a><a href="#profile-skills">Your skills</a></div><button type="submit" class="btn btn-primary">Save changes ${icon('check',18)}</button></aside>
     <div class="settings-fields"><section id="profile-basics" class="settings-panel"><div class="settings-panel-heading">${illustration('maker')}<div><h2>The basics</h2><p>Let fellow makers get to know you.</p></div></div><div class="settings-two-col"><label class="field-label">Name<input name="name" value="${escapeHtml(user.name)}" maxlength="80" minlength="2" required></label><label class="field-label">Username<input name="username" value="${escapeHtml(user.username)}" pattern="[A-Za-z0-9_]+" minlength="3" maxlength="24" required></label></div><label class="field-label">What do you do?<input name="profession" value="${escapeHtml(user.profession||'')}" maxlength="80" placeholder="Designer, developer, curious human…"></label><label class="field-label">About you<textarea name="bio" rows="3" maxlength="280">${escapeHtml(user.bio||'')}</textarea></label><label class="field-label">Website<input name="website" type="url" value="${escapeHtml(user.website||'')}" placeholder="https://"></label></section>
-    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>A little character</h2><p>Male, female, or a little character. Find your look.</p></div></div>${renderAvatarPicker(user)}${uploadField('avatar', 'Or upload your own photo')}${renderCoverPicker(user)}</section>
+    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>Choose your character</h2><p>Original VibeDock illustrations with a little more personality.</p></div></div>${renderAvatarPicker(user)}${uploadField('avatar', 'Or upload your own photo')}${renderCoverPicker(user)}</section>
     <section id="profile-skills" class="settings-panel"><div class="settings-panel-heading">${illustration('build')}<div><h2>What’s in your toolkit?</h2><p>Choose up to 12 skills. Add your own, too.</p></div></div><label class="field-label">Selected skills<input name="skills" maxlength="420" value="${escapeHtml((user.skills||[]).join(', '))}" placeholder="Add custom skills, separated by commas"></label>${renderSkillPicker(user.skills||[])}</section><div class="settings-save"><div class="form-message" data-form-message hidden></div><button type="submit" class="btn btn-primary">Save changes</button></div></div></form></main>`;
 }
 
 function renderAvatarPicker(user) {
     const selected = user.avatarUploaded || !AVATAR_CHOICES.some(choice=>choice.key===user.avatarChoice) ? 'keep' : user.avatarChoice;
-    const groups = ['Male', 'Female', 'Characters'];
-    const active = AVATAR_CHOICES.find(choice => choice.key === selected)?.group || 'Male';
+    const groups = [...new Set(AVATAR_CHOICES.map(choice => choice.group))];
+    const active = AVATAR_CHOICES.find(choice => choice.key === selected)?.group || groups[0];
     return `<fieldset class="avatar-picker" data-active-avatar-group="${active}"><legend>Avatar</legend>
         ${selected === 'keep' ? `<label class="avatar-current-choice"><input type="radio" name="avatar_choice" value="keep" checked>${avatar(user.name || 'You', 'tone-neutral', 'avatar-choice-preview', user.avatarUrl)}<span>Keep current avatar</span></label>` : ''}
-        <div class="avatar-picker-tools"><div class="avatar-group-switch" role="group" aria-label="Avatar category">${groups.map(group => `<button type="button" data-action="avatar-group" data-group="${group}" aria-pressed="${group === active}" aria-controls="avatar-${group.toLowerCase()}">${group}</button>`).join('')}</div><button type="button" class="btn btn-outline btn-small" data-action="random-avatar">${icon('shuffle', 16)} Random</button></div>
-        ${groups.map(group => `<div class="avatar-choice-group" id="avatar-${group.toLowerCase()}" data-avatar-group="${group}" ${active !== group ? 'hidden' : ''}><div class="avatar-choice-grid">${AVATAR_CHOICES.filter(choice => choice.group === group).map((choice, index) => {
-            const visible = index < 8 || selected === choice.key;
-            return `<label ${!visible ? 'hidden' : ''} data-avatar-index="${index}" class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}>${active === group && visible ? avatarChoiceImage(choice) : `<span class="avatar-placeholder" data-avatar-image="${choice.key}"></span>`}<span>${choice.label}</span></label>`;
-        }).join('')}</div>${group === 'Characters' ? `<button type="button" class="picker-expand" data-action="expand-avatars" aria-expanded="false" aria-controls="avatar-characters">Meet all 12 characters ${icon('expand_more',18)}</button>` : ''}</div>`).join('')}
-        <p class="avatar-picker-note">Your choice, not a profile label. Only the group you open loads images.</p>
+        <div class="avatar-picker-tools"><div class="avatar-group-switch" role="group" aria-label="Avatar collection">${groups.map(group => `<button type="button" data-action="avatar-group" data-group="${group}" aria-pressed="${group === active}" aria-controls="avatar-${group.toLowerCase()}">${group}</button>`).join('')}</div><button type="button" class="btn btn-outline btn-small" data-action="random-avatar">${icon('shuffle', 16)} Random</button></div>
+        ${groups.map(group => `<div class="avatar-choice-group" id="avatar-${group.toLowerCase()}" data-avatar-group="${group}" ${active !== group ? 'hidden' : ''}><div class="avatar-choice-grid">${AVATAR_CHOICES.filter(choice => choice.group === group).map(choice => `<label class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}>${active === group ? avatarChoiceImage(choice) : `<span class="avatar-placeholder" data-avatar-image="${choice.key}"></span>`}<span>${choice.label}</span></label>`).join('')}</div></div>`).join('')}
+        <p class="avatar-picker-note">Choose any illustration you like. We load each collection only when you open it.</p>
     </fieldset>`;
 }
 function avatarChoiceImage(choice) {
     return `<img src="${avatarPath(choice.key)}" ${avatarResolutionAttributes(choice.key, 72)} alt="${choice.label}" width="96" height="96" loading="lazy" decoding="async">`;
 }
 function hydrateAvatarGroup(panel) {
-    panel.querySelectorAll('.avatar-choice:not([hidden]) [data-avatar-image]').forEach(placeholder => {
+    panel.querySelectorAll('[data-avatar-image]').forEach(placeholder => {
         const choice = AVATAR_CHOICES.find(item => item.key === placeholder.dataset.avatarImage);
         if (choice) placeholder.outerHTML = avatarChoiceImage(choice);
     });
 }
 function selectAvatarGroup(picker, group) {
-    if (!['Male','Female','Characters'].includes(group)) return;
+    if (!AVATAR_CHOICES.some(choice => choice.group === group)) return;
     picker.dataset.activeAvatarGroup = group;
     picker.querySelectorAll('[data-action="avatar-group"]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.group === group)));
     picker.querySelectorAll('[data-avatar-group]').forEach(panel => {
@@ -1187,7 +1202,6 @@ function renderModal() {
 
 function renderPageContent() {
     if (creationPages.includes(state.page)) return renderCreatePage();
-    if (state.page === 'polls') return renderPollsPage();
     if (state.page === 'badges' || state.page === 'help') return renderGuidePage();
     if (state.page === 'feed') return renderMain();
     if (state.page === 'profile-edit') return renderProfileEditPage();
@@ -1235,7 +1249,7 @@ function renderApp({ updatePage = true } = {}) {
     if (state.page === 'messages' && !state.conversationsLoaded) {
         void loadConversations();
     }
-    if (['feed','launches','polls'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
+    if (['feed','launches'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
     if (state.page === 'rankings' && !state.rankingsLoaded) void loadRankings();
     if (state.page === 'community-chat' && state.currentUser && !state.groupChatLoaded && !state.groupChatLoading) void loadCommunityChat();
     if (state.page === 'community-chat') {
@@ -1343,7 +1357,7 @@ async function loadServerFeed() {
         state.posts = linked && !posts.some(post => post.id === linked.id) ? [...posts, linked] : posts;
     }
     catch (error) { state.feedError = error.message; }
-    finally { state.feedLoading = false; if (['feed','launches','polls','rankings'].includes(state.page)) renderApp(); }
+    finally { state.feedLoading = false; if (['feed','launches','rankings'].includes(state.page)) renderApp(); }
 }
 
 async function loadRankings() {
@@ -1577,8 +1591,14 @@ function showMessageError(type, message) {
 }
 
 
+function syncFeedPath({ replace = false } = {}) {
+    const path = feedPath(state.filter);
+    if (`${window.location.pathname}${window.location.search}` === path) return;
+    window.history[replace ? 'replaceState' : 'pushState']({}, '', path);
+}
+
 function navigateTo(page, username = null) {
-    const allowed = ['home', 'feed', 'profile-edit', 'polls', 'badges', 'help', ...creationPages, 'launches', 'rankings', 'community-chat', 'messages', 'profile', 'admin', 'about', 'guidelines', 'privacy', 'terms'];
+    const allowed = ['home', 'feed', 'profile-edit', 'badges', 'help', ...creationPages, 'launches', 'rankings', 'community-chat', 'messages', 'profile', 'admin', 'about', 'guidelines', 'privacy', 'terms'];
     const nextPage = allowed.includes(page) ? page : 'home';
     if (nextPage === 'admin' && apiEnabled) {
         window.location.assign('/admin');
@@ -1593,6 +1613,11 @@ function navigateTo(page, username = null) {
     state.mobileSearch = false;
     state.modal = null;
     state.initialPostId = null;
+    state.reactionPickerViewId = null;
+    if (nextPage === 'feed') {
+        state.filter = 'all';
+        state.tag = '';
+    }
     if (nextPage === 'profile') {
         if (state.profileUsername !== nextUsername) { state.profileData = null; state.profileLoadedFor = null; }
         state.profileUsername = nextUsername;
@@ -1600,7 +1625,7 @@ function navigateTo(page, username = null) {
         state.profileUsername = null;
     }
     if (nextPage === 'community-chat' && !apiEnabled) state.groupChatLoaded = true;
-    const path = creationPages.includes(nextPage) ? `/create/${nextPage.slice(7)}` : nextPage === 'home' ? '/' : nextPage === 'profile-edit' ? '/settings/profile' : nextPage === 'profile' ? `/u/${encodeURIComponent(nextUsername)}` : `/${nextPage}`;
+    const path = creationPages.includes(nextPage) ? `/create/${nextPage.slice(7)}` : nextPage === 'home' ? '/' : nextPage === 'feed' ? feedPath(state.filter) : nextPage === 'profile-edit' ? '/settings/profile' : nextPage === 'profile' ? `/u/${encodeURIComponent(nextUsername)}` : `/${nextPage}`;
     window.history.pushState({}, '', path);
     renderApp();
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1623,17 +1648,16 @@ function closeModal() {
 
 function setFilter(filter) {
     const changingPage = state.page !== 'feed';
-    if (changingPage) {
-        state.page = 'feed';
-        state.profileUsername = null;
-        state.initialPostId = null;
-        window.history.pushState({}, '', '/feed');
-    }
-    state.filter = ['all', 'discussion', 'question', 'poll', 'launch', 'saved'].includes(filter) ? filter : 'all';
+    state.page = 'feed';
+    state.profileUsername = null;
+    state.initialPostId = null;
+    state.reactionPickerViewId = null;
+    state.filter = FEED_FILTERS.includes(filter) ? filter : 'all';
     state.tag = '';
     state.mobileMenu = false;
+    syncFeedPath();
     if (changingPage) renderApp();
-    renderHeaderAndFeedState();
+    else renderHeaderAndFeedState();
 }
 
 function renderHeaderAndFeedState() {
@@ -1644,6 +1668,7 @@ function renderHeaderAndFeedState() {
     const header = document.querySelector('.site-header');
     if (header) { header.outerHTML = renderHeader(); renderedRegions.delete('header-region'); }
     renderFeed();
+    updateMetadata(state, apiEnabled);
     if (state.filter !== 'all') {
         document.querySelector('#community')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
@@ -1673,8 +1698,8 @@ async function createAuth(form) {
             state.currentUser = result.user;
         } else if (mode === 'login') {
             const demoAccounts = {
-                'demo@vibedock.test': { password: 'VibeDockDemo2026!', name: 'Demo Maker', username: 'demomaker', avatarChoice: 'fluent-owl', coverChoice: 'blossom', isAdmin: false, profession: 'Independent maker', skills: ['Prototyping', 'AI tools', 'Product design'] },
-                'admin@vibedock.test': { password: 'VibeDockAdmin2026!', name: 'Demo Admin', username: 'demoadmin', avatarChoice: 'fluent-ninja', coverChoice: 'ocean', isAdmin: true, profession: 'Community moderator', skills: ['Community building'] },
+                'demo@vibedock.test': { password: 'VibeDockDemo2026!', name: 'Demo Maker', username: 'demomaker', avatarChoice: 'byte-bard', coverChoice: 'blossom', isAdmin: false, profession: 'Independent maker', skills: ['Prototyping', 'AI tools', 'Product design'] },
+                'admin@vibedock.test': { password: 'VibeDockAdmin2026!', name: 'Demo Admin', username: 'demoadmin', avatarChoice: 'noodle-ninja', coverChoice: 'ocean', isAdmin: true, profession: 'Community moderator', skills: ['Community building'] },
             };
             const account = demoAccounts[payload.email.toLowerCase()];
             if (!account || account.password !== payload.password) throw new Error('Use one of the demo accounts shown above.');
@@ -1683,7 +1708,7 @@ async function createAuth(form) {
         } else {
             const username = payload.username || payload.name.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
             if (username.length < 3) throw new Error('Choose a username with at least three letters or numbers.');
-            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'fluent-astronaut', avatarUploaded: false, avatarUrl: '/avatars/fluent-astronaut.png', isAdmin: false };
+            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'orbit-ollie', avatarUploaded: false, avatarUrl: '/avatars/orbit-ollie.svg', isAdmin: false };
             writeStorage(STORAGE.user, state.currentUser);
         }
         state.modal = null;
@@ -1795,7 +1820,8 @@ async function createPost(form) {
         state.tag = '';
         state.search = '';
         state.modal = null;
-        window.history.pushState({}, '', type === 'launch' ? '/launches' : '/feed');
+        state.reactionPickerViewId = null;
+        window.history.pushState({}, '', type === 'launch' ? '/launches' : feedPath(state.filter));
         persistDemo();
         renderApp();
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1824,8 +1850,8 @@ function updatePostCopies(id, values) {
         if (String(post.sourcePost?.id) === String(id)) Object.assign(post.sourcePost, values);
     }
 }
-function setReactionBusy(id, busy, kind = 'react') {
-    root.querySelectorAll(`[data-action="${kind}"]`).forEach(button => {
+function setReactionBusy(id, busy) {
+    root.querySelectorAll('.post-reactions [data-post-id]').forEach(button => {
         if (button.dataset.postId === String(id)) {
             button.disabled = busy;
             button.setAttribute('aria-busy', String(busy));
@@ -1839,14 +1865,44 @@ function refreshReactionViews(post) {
         const focused = group.contains(document.activeElement) ? document.activeElement : null;
         const action = focused?.dataset.action;
         const reaction = focused?.dataset.reaction;
-        const template = document.createElement('template'); template.innerHTML = renderReactions(post);
+        const viewId = group.dataset.reactionViewId || post.id;
+        const template = document.createElement('template'); template.innerHTML = renderReactions(post, viewId);
         const next = template.content.firstElementChild;
         group.replaceWith(next);
         if (action) next.querySelector(reaction ? `[data-reaction="${reaction}"]` : `[data-action="${action}"]`)?.focus({preventScroll:true});
     });
     renderedRegions.delete('page-content');
     // A later card reconciliation must not mistake the original markup for current state.
-    root.querySelectorAll('.post-card').forEach(card => { if (card.querySelector(`[data-action="react"]`)?.dataset.postId === String(post.id)) delete card.renderedHTML; });
+    root.querySelectorAll('.post-card').forEach(card => {
+        if ([...card.querySelectorAll('.post-reactions [data-post-id]')].some(button => button.dataset.postId === String(post.id))) delete card.renderedHTML;
+    });
+}
+
+function closeReactionPicker({ returnFocus = false } = {}) {
+    const viewId = state.reactionPickerViewId;
+    if (!viewId) return false;
+    const group = [...root.querySelectorAll('.post-reactions')].find(item => item.dataset.reactionViewId === String(viewId));
+    const post = group ? findPostById(group.querySelector('[data-post-id]')?.dataset.postId) : null;
+    state.reactionPickerViewId = null;
+    if (post) refreshReactionViews(post);
+    if (returnFocus) {
+        const trigger = [...root.querySelectorAll('[data-action="toggle-reactions"]')].find(button => button.dataset.reactionViewId === String(viewId));
+        trigger?.focus({ preventScroll: true });
+    }
+    return true;
+}
+
+function toggleReactionPicker(postId, viewId) {
+    const post = findPostById(postId);
+    if (!post) return;
+    if (state.reactionPickerViewId === String(viewId)) {
+        state.reactionPickerViewId = null;
+        refreshReactionViews(post);
+        return;
+    }
+    closeReactionPicker();
+    state.reactionPickerViewId = String(viewId);
+    refreshReactionViews(post);
 }
 
 function refreshPostView() {
@@ -1917,13 +1973,13 @@ async function toggleLike(postId) {
     if (!state.currentUser) return openAuth('register');
     const post = findPostById(postId);
     if (!post || state.pendingLikes.has(String(postId))) return;
-    state.pendingLikes.add(String(postId)); setReactionBusy(postId, true, 'like');
+    state.pendingLikes.add(String(postId)); setReactionBusy(postId, true);
     try {
         const result = apiEnabled ? await apiRequest(`/api/posts/${encodeURIComponent(postId)}/like`, 'POST', {}) : {liked:!post.liked, likes:Math.max(0, Number(post.likes || 0) + (post.liked ? -1 : 1))};
         updatePostCopies(postId, {liked:result.liked, likes:Number(result.likes)});
         persistDemo(); refreshReactionViews(post);
     } catch (error) { showToast(error.message); }
-    finally { state.pendingLikes.delete(String(postId)); setReactionBusy(postId, false, 'like'); }
+    finally { state.pendingLikes.delete(String(postId)); setReactionBusy(postId, false); }
 }
 
 async function reactToPost(postId, reaction) {
@@ -1971,10 +2027,11 @@ async function repostPost(postId) {
         if (state.page !== 'feed') {
             state.page = 'feed';
             state.initialPostId = null;
-            window.history.pushState({}, '', '/feed');
         }
         state.filter = 'all';
         state.tag = '';
+        state.reactionPickerViewId = null;
+        syncFeedPath();
         persistDemo();
         renderApp();
         showToast('Reposted.');
@@ -2338,19 +2395,12 @@ root.addEventListener('click', async (event) => {
         return;
     }
     if (action === 'avatar-group') { selectAvatarGroup(target.closest('.avatar-picker'), target.dataset.group); return; }
-    if (action === 'expand-avatars' || action === 'expand-skills') {
+    if (action === 'expand-skills') {
         const expanded = target.getAttribute('aria-expanded') !== 'true';
         target.setAttribute('aria-expanded', String(expanded));
         const fieldset = target.closest('fieldset');
-        if (action === 'expand-avatars') {
-            const panel = target.closest('[data-avatar-group]');
-            panel.querySelectorAll('[data-avatar-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.avatarIndex) >= 8 && !choice.querySelector('input').checked; });
-            hydrateAvatarGroup(panel);
-            target.textContent = expanded ? 'Show fewer characters' : 'Meet all 12 characters';
-        } else {
-            fieldset.querySelectorAll('[data-skill-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.skillIndex) >= 16 && choice.getAttribute('aria-pressed') !== 'true'; });
-            target.textContent = expanded ? 'Show fewer skills' : `Browse all ${SKILLS.length} skills`;
-        }
+        fieldset.querySelectorAll('[data-skill-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.skillIndex) >= 16 && choice.getAttribute('aria-pressed') !== 'true'; });
+        target.textContent = expanded ? 'Show fewer skills' : `Browse all ${SKILLS.length} skills`;
         return;
     }
     if (action === 'reload-rankings') return loadRankings();
@@ -2376,6 +2426,7 @@ root.addEventListener('click', async (event) => {
         state.mobileSearch = false;
         state.initialPostId = String(target.dataset.postId || '');
         state.filter = 'all'; state.tag = '';
+        state.reactionPickerViewId = null;
         window.history.pushState({}, '', `/posts/${encodeURIComponent(state.initialPostId)}`);
         renderApp();
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -2439,30 +2490,37 @@ root.addEventListener('click', async (event) => {
         if (root.querySelectorAll('.poll-option-fields input').length >= 5) target.hidden = true;
         return;
     }
-    if (action === 'filter') return setFilter(target.dataset.filter || 'all');
+    if (action === 'filter') {
+        event.preventDefault();
+        return setFilter(target.dataset.filter || 'all');
+    }
     if (action === 'tag') {
-        if (state.page !== 'feed') {
-            state.page = 'feed';
-            window.history.pushState({}, '', '/feed');
-        }
+        const changingPage = state.page !== 'feed';
+        state.page = 'feed';
+        state.profileUsername = null;
         state.filter = 'all';
         state.initialPostId = null;
         state.tag = target.dataset.tag || '';
-        renderHeaderAndFeedState();
+        state.reactionPickerViewId = null;
+        syncFeedPath();
+        if (changingPage) renderApp();
+        else renderHeaderAndFeedState();
         return;
     }
     if (action === 'clear-filter') {
-        if (state.page !== 'feed') {
-            state.page = 'feed';
-            window.history.pushState({}, '', '/feed');
-        }
+        const changingPage = state.page !== 'feed';
+        state.page = 'feed';
+        state.profileUsername = null;
         state.initialPostId = null;
         state.filter = 'all';
         state.tag = '';
         state.search = '';
+        state.reactionPickerViewId = null;
+        syncFeedPath();
         const search = document.querySelector('[data-search]');
         if (search) search.value = '';
-        renderHeaderAndFeedState();
+        if (changingPage) renderApp();
+        else renderHeaderAndFeedState();
         return;
     }
     if (action === 'toggle-menu') {
@@ -2503,8 +2561,15 @@ root.addEventListener('click', async (event) => {
         }
         return;
     }
-    if (action === 'like') return toggleLike(target.dataset.postId);
-    if (action === 'react') return reactToPost(target.dataset.postId, target.dataset.reaction);
+    if (action === 'toggle-reactions') return toggleReactionPicker(target.dataset.postId, target.dataset.reactionViewId);
+    if (action === 'like') {
+        closeReactionPicker({ returnFocus: true });
+        return toggleLike(target.dataset.postId);
+    }
+    if (action === 'react') {
+        closeReactionPicker({ returnFocus: true });
+        return reactToPost(target.dataset.postId, target.dataset.reaction);
+    }
     if (action === 'repost') return repostPost(target.dataset.postId);
     if (action === 'vote') return vote(target.dataset.postId, target.dataset.optionIndex);
     if (action === 'launch-vote') return voteLaunch(target.dataset.postId, target.dataset.vote);
@@ -2663,6 +2728,7 @@ document.addEventListener('keydown', (event) => {
         closeModal();
         return;
     }
+    if (closeReactionPicker({ returnFocus: true })) return;
     if (state.mobileSearch) {
         state.mobileSearch = false;
         const header = document.querySelector('.site-header');
@@ -2684,6 +2750,7 @@ document.addEventListener('click', (event) => {
         state.menuPostId = null;
         refreshPostView();
     }
+    if (state.reactionPickerViewId && !event.target.closest('.reaction-control')) closeReactionPicker();
     if (!event.target.closest('.nav-search, [data-action="toggle-search"]')) closeSearchDropdown();
 });
 
@@ -2697,6 +2764,10 @@ window.addEventListener('popstate', () => {
     state.page = page;
     state.profileUsername = page === 'profile' ? parts[1] : null;
     state.initialPostId = parts[0] === 'posts' ? parts[1] : parts[0] === 'brands' ? state.posts.find(post => post.brand?.slug === parts[1])?.id || null : null;
+    const legacyPollPath = ['models', 'polls'].includes(parts[0]);
+    state.filter = page === 'feed' ? (legacyPollPath ? 'poll' : currentFeedFilter()) : 'all';
+    if (legacyPollPath) syncFeedPath({ replace: true });
+    state.reactionPickerViewId = null;
     state.modal = null;
     state.mobileMenu = false;
     state.mobileSearch = false;
@@ -2710,7 +2781,7 @@ root.addEventListener('error', event => {
     const image = event.target;
     if (!(image instanceof HTMLImageElement) || image.dataset.fallback) return;
     image.dataset.fallback = 'true';
-    if (image.closest('.avatar') || image.classList.contains('settings-avatar')) { image.removeAttribute('srcset'); image.src = avatarPath('fluent-robot'); }
+    if (image.closest('.avatar') || image.classList.contains('settings-avatar')) { image.removeAttribute('srcset'); image.src = avatarPath('robo-ravi'); }
     else {
         const notice = document.createElement('span');
         notice.className = 'image-unavailable'; notice.setAttribute('role', 'img');

@@ -1,98 +1,26 @@
 {
-  "fluent-man-classic": {
-    "small": "/avatars/optimized/fluent-man-classic-96-f4fa6ca1f0.webp",
-    "large": "/avatars/optimized/fluent-man-classic-256-768506c49d.webp"
-  },
-  "fluent-man-curly": {
-    "small": "/avatars/optimized/fluent-man-curly-96-6c65aa5b2f.webp",
-    "large": "/avatars/optimized/fluent-man-curly-256-cb84e3e6e7.webp"
-  },
-  "fluent-man-copper": {
-    "small": "/avatars/optimized/fluent-man-copper-96-77c5bdae72.webp",
-    "large": "/avatars/optimized/fluent-man-copper-256-5f9ac753f0.webp"
-  },
-  "fluent-man-coder": {
-    "small": "/avatars/optimized/fluent-man-coder-96-117d7ddf8d.webp",
-    "large": "/avatars/optimized/fluent-man-coder-256-034f4920b5.webp"
-  },
-  "fluent-man-artist": {
-    "small": "/avatars/optimized/fluent-man-artist-96-7d2cff6efb.webp",
-    "large": "/avatars/optimized/fluent-man-artist-256-f5b87c3d93.webp"
-  },
-  "fluent-man-explorer": {
-    "small": "/avatars/optimized/fluent-man-explorer-96-ec60730986.webp",
-    "large": "/avatars/optimized/fluent-man-explorer-256-3d9b12e926.webp"
-  },
-  "fluent-woman-classic": {
-    "small": "/avatars/optimized/fluent-woman-classic-96-1844cbd825.webp",
-    "large": "/avatars/optimized/fluent-woman-classic-256-cfdc6cac3e.webp"
-  },
-  "fluent-woman-curly": {
-    "small": "/avatars/optimized/fluent-woman-curly-96-35f4fc4354.webp",
-    "large": "/avatars/optimized/fluent-woman-curly-256-0dcef67e6b.webp"
-  },
-  "fluent-woman-copper": {
-    "small": "/avatars/optimized/fluent-woman-copper-96-d92bff9906.webp",
-    "large": "/avatars/optimized/fluent-woman-copper-256-c09dbd8111.webp"
-  },
-  "fluent-woman-coder": {
-    "small": "/avatars/optimized/fluent-woman-coder-96-33b97025ae.webp",
-    "large": "/avatars/optimized/fluent-woman-coder-256-3cbbddd0ae.webp"
-  },
-  "fluent-woman-artist": {
-    "small": "/avatars/optimized/fluent-woman-artist-96-013a357bf0.webp",
-    "large": "/avatars/optimized/fluent-woman-artist-256-ae3a6c8397.webp"
-  },
-  "fluent-woman-explorer": {
-    "small": "/avatars/optimized/fluent-woman-explorer-96-57a34d0f3f.webp",
-    "large": "/avatars/optimized/fluent-woman-explorer-256-53420282c1.webp"
-  },
-  "fluent-robot": {
-    "small": "/avatars/optimized/fluent-robot-96-309f1bdb6e.webp",
-    "large": "/avatars/optimized/fluent-robot-256-4741679b0a.webp"
-  },
-  "fluent-astronaut": {
-    "small": "/avatars/optimized/fluent-astronaut-96-7f6bf42120.webp",
-    "large": "/avatars/optimized/fluent-astronaut-256-d56c6d1beb.webp"
-  },
-  "fluent-ninja": {
-    "small": "/avatars/optimized/fluent-ninja-96-8b0d8a2ba9.webp",
-    "large": "/avatars/optimized/fluent-ninja-256-8f2465b994.webp"
-  },
-  "fluent-fox": {
-    "small": "/avatars/optimized/fluent-fox-96-094a61a23b.webp",
-    "large": "/avatars/optimized/fluent-fox-256-ad2829a9c4.webp"
-  },
-  "fluent-cat-face": {
-    "small": "/avatars/optimized/fluent-cat-face-96-4e7fcd531c.webp",
-    "large": "/avatars/optimized/fluent-cat-face-256-658313d92f.webp"
-  },
-  "fluent-unicorn": {
-    "small": "/avatars/optimized/fluent-unicorn-96-3811e30357.webp",
-    "large": "/avatars/optimized/fluent-unicorn-256-1d156859c0.webp"
-  },
-  "fluent-alien": {
-    "small": "/avatars/optimized/fluent-alien-96-940b127ba7.webp",
-    "large": "/avatars/optimized/fluent-alien-256-430593ce89.webp"
-  },
-  "fluent-ghost": {
-    "small": "/avatars/optimized/fluent-ghost-96-cdc54a6512.webp",
-    "large": "/avatars/optimized/fluent-ghost-256-f50c1d1175.webp"
-  },
-  "fluent-dragon-face": {
-    "small": "/avatars/optimized/fluent-dragon-face-96-49d1949fe3.webp",
-    "large": "/avatars/optimized/fluent-dragon-face-256-3a94c68275.webp"
-  },
-  "fluent-panda": {
-    "small": "/avatars/optimized/fluent-panda-96-050da20b6f.webp",
-    "large": "/avatars/optimized/fluent-panda-256-b968c53a00.webp"
-  },
-  "fluent-owl": {
-    "small": "/avatars/optimized/fluent-owl-96-79a06cf8e0.webp",
-    "large": "/avatars/optimized/fluent-owl-256-704c0ced59.webp"
-  },
-  "fluent-octopus": {
-    "small": "/avatars/optimized/fluent-octopus-96-0896907e80.webp",
-    "large": "/avatars/optimized/fluent-octopus-256-74a4940e3c.webp"
-  }
+  "orbit-ollie": { "small": "/avatars/orbit-ollie.svg", "large": "/avatars/orbit-ollie.svg" },
+  "captain-commit": { "small": "/avatars/captain-commit.svg", "large": "/avatars/captain-commit.svg" },
+  "byte-bard": { "small": "/avatars/byte-bard.svg", "large": "/avatars/byte-bard.svg" },
+  "agent-loop": { "small": "/avatars/agent-loop.svg", "large": "/avatars/agent-loop.svg" },
+  "professor-patch": { "small": "/avatars/professor-patch.svg", "large": "/avatars/professor-patch.svg" },
+  "noodle-ninja": { "small": "/avatars/noodle-ninja.svg", "large": "/avatars/noodle-ninja.svg" },
+  "nova-nomad": { "small": "/avatars/nova-nomad.svg", "large": "/avatars/nova-nomad.svg" },
+  "cloud-kid": { "small": "/avatars/cloud-kid.svg", "large": "/avatars/cloud-kid.svg" },
+  "pixel-fox": { "small": "/avatars/pixel-fox.svg", "large": "/avatars/pixel-fox.svg" },
+  "dino-debug": { "small": "/avatars/dino-debug.svg", "large": "/avatars/dino-debug.svg" },
+  "sir-ships": { "small": "/avatars/sir-ships.svg", "large": "/avatars/sir-ships.svg" },
+  "bean-bandit": { "small": "/avatars/bean-bandit.svg", "large": "/avatars/bean-bandit.svg" },
+  "bug-buddy": { "small": "/avatars/bug-buddy.svg", "large": "/avatars/bug-buddy.svg" },
+  "robo-ravi": { "small": "/avatars/robo-ravi.svg", "large": "/avatars/robo-ravi.svg" },
+  "disco-duck": { "small": "/avatars/disco-duck.svg", "large": "/avatars/disco-duck.svg" },
+  "cosmic-cat": { "small": "/avatars/cosmic-cat.svg", "large": "/avatars/cosmic-cat.svg" },
+  "spook-exe": { "small": "/avatars/spook-exe.svg", "large": "/avatars/spook-exe.svg" },
+  "midnight-moth": { "small": "/avatars/midnight-moth.svg", "large": "/avatars/midnight-moth.svg" },
+  "ramen-ronin": { "small": "/avatars/ramen-ronin.svg", "large": "/avatars/ramen-ronin.svg" },
+  "moss-mage": { "small": "/avatars/moss-mage.svg", "large": "/avatars/moss-mage.svg" },
+  "sheriff-syntax": { "small": "/avatars/sheriff-syntax.svg", "large": "/avatars/sheriff-syntax.svg" },
+  "neon-gecko": { "small": "/avatars/neon-gecko.svg", "large": "/avatars/neon-gecko.svg" },
+  "count-cache": { "small": "/avatars/count-cache.svg", "large": "/avatars/count-cache.svg" },
+  "toast-rider": { "small": "/avatars/toast-rider.svg", "large": "/avatars/toast-rider.svg" }
 }

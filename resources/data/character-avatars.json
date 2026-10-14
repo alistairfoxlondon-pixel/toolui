@@ -1,122 +1,28 @@
 [
-  {
-    "key": "fluent-man-classic",
-    "label": "Classic",
-    "group": "Male"
-  },
-  {
-    "key": "fluent-man-curly",
-    "label": "Curly",
-    "group": "Male"
-  },
-  {
-    "key": "fluent-man-copper",
-    "label": "Copper",
-    "group": "Male"
-  },
-  {
-    "key": "fluent-man-coder",
-    "label": "Coder",
-    "group": "Male"
-  },
-  {
-    "key": "fluent-man-artist",
-    "label": "Artist",
-    "group": "Male"
-  },
-  {
-    "key": "fluent-man-explorer",
-    "label": "Explorer",
-    "group": "Male"
-  },
-  {
-    "key": "fluent-woman-classic",
-    "label": "Classic",
-    "group": "Female"
-  },
-  {
-    "key": "fluent-woman-curly",
-    "label": "Curly",
-    "group": "Female"
-  },
-  {
-    "key": "fluent-woman-copper",
-    "label": "Copper",
-    "group": "Female"
-  },
-  {
-    "key": "fluent-woman-coder",
-    "label": "Coder",
-    "group": "Female"
-  },
-  {
-    "key": "fluent-woman-artist",
-    "label": "Artist",
-    "group": "Female"
-  },
-  {
-    "key": "fluent-woman-explorer",
-    "label": "Explorer",
-    "group": "Female"
-  },
-  {
-    "key": "fluent-robot",
-    "label": "Robot",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-astronaut",
-    "label": "Astronaut",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-ninja",
-    "label": "Ninja",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-fox",
-    "label": "Fox",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-cat-face",
-    "label": "Cat face",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-unicorn",
-    "label": "Unicorn",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-alien",
-    "label": "Alien",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-ghost",
-    "label": "Ghost",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-dragon-face",
-    "label": "Dragon face",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-panda",
-    "label": "Panda",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-owl",
-    "label": "Owl",
-    "group": "Characters"
-  },
-  {
-    "key": "fluent-octopus",
-    "label": "Octopus",
-    "group": "Characters"
-  }
+  { "key": "orbit-ollie", "label": "Orbit Ollie", "group": "Makers" },
+  { "key": "captain-commit", "label": "Captain Commit", "group": "Makers" },
+  { "key": "byte-bard", "label": "Byte Bard", "group": "Makers" },
+  { "key": "agent-loop", "label": "Agent Loop", "group": "Makers" },
+  { "key": "professor-patch", "label": "Professor Patch", "group": "Makers" },
+  { "key": "noodle-ninja", "label": "Noodle Ninja", "group": "Makers" },
+  { "key": "nova-nomad", "label": "Nova Nomad", "group": "Makers" },
+  { "key": "cloud-kid", "label": "Cloud Kid", "group": "Makers" },
+
+  { "key": "pixel-fox", "label": "Pixel Fox", "group": "Creatures" },
+  { "key": "dino-debug", "label": "Dino Debug", "group": "Creatures" },
+  { "key": "sir-ships", "label": "Sir Ships-a-lot", "group": "Creatures" },
+  { "key": "bean-bandit", "label": "Bean Bandit", "group": "Creatures" },
+  { "key": "bug-buddy", "label": "Bug Buddy", "group": "Creatures" },
+  { "key": "robo-ravi", "label": "Robo Ravi", "group": "Creatures" },
+  { "key": "disco-duck", "label": "Disco Duck", "group": "Creatures" },
+  { "key": "cosmic-cat", "label": "Cosmic Cat", "group": "Creatures" },
+
+  { "key": "spook-exe", "label": "Spook.exe", "group": "Sidekicks" },
+  { "key": "midnight-moth", "label": "Midnight Moth", "group": "Sidekicks" },
+  { "key": "ramen-ronin", "label": "Ramen Ronin", "group": "Sidekicks" },
+  { "key": "moss-mage", "label": "Moss Mage", "group": "Sidekicks" },
+  { "key": "sheriff-syntax", "label": "Sheriff Syntax", "group": "Sidekicks" },
+  { "key": "neon-gecko", "label": "Neon Gecko", "group": "Sidekicks" },
+  { "key": "count-cache", "label": "Count Cache", "group": "Sidekicks" },
+  { "key": "toast-rider", "label": "Toast Rider", "group": "Sidekicks" }
 ]

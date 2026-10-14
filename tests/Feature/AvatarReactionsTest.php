@@ -13,20 +13,21 @@ class AvatarReactionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_every_library_avatar_has_optimized_local_assets(): void
+    public function test_every_library_avatar_has_local_illustrated_assets(): void
     {
         $choices = json_decode(file_get_contents(resource_path('data/character-avatars.json')), true);
         $assets = json_decode(file_get_contents(resource_path('data/avatar-assets.json')), true);
         $this->assertCount(24, $choices);
-        $this->assertCount(6, array_filter($choices, fn ($choice) => $choice['group'] === 'Male'));
-        $this->assertCount(6, array_filter($choices, fn ($choice) => $choice['group'] === 'Female'));
+        $this->assertCount(8, array_filter($choices, fn ($choice) => $choice['group'] === 'Makers'));
+        $this->assertCount(8, array_filter($choices, fn ($choice) => $choice['group'] === 'Creatures'));
+        $this->assertCount(8, array_filter($choices, fn ($choice) => $choice['group'] === 'Sidekicks'));
         foreach ($choices as $choice) {
             $this->assertArrayHasKey($choice['key'], AvatarLibrary::CHOICES);
-            $this->assertStringEndsWith('.webp', AvatarLibrary::url($choice['key']));
+            $this->assertStringEndsWith('.svg', AvatarLibrary::url($choice['key']));
             foreach ($assets[$choice['key']] as $path) $this->assertFileExists(public_path(ltrim($path, '/')));
         }
-        $this->assertStringContainsString('fluent-man-', AvatarLibrary::url('male-indigo'));
-        $this->assertStringContainsString('fluent-woman-', AvatarLibrary::url('female-rose'));
+        $this->assertStringContainsString('/avatars/orbit-ollie.svg', AvatarLibrary::url('male-indigo'));
+        $this->assertStringContainsString('/avatars/nova-nomad.svg', AvatarLibrary::url('female-rose'));
     }
 
     public function test_members_can_react_to_every_content_type_and_change_or_remove_their_reaction(): void

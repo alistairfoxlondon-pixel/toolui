@@ -36,12 +36,15 @@ function harness(path, config = {}, handler = () => ({})) {
     let retry = false;
     const h = harness('/models', {}, async url => url === '/api/feed' ? retry ? {data:[]} : {status:503, message:'Polls temporarily unavailable'} : {});
     await tick();
-    assert.equal(h.w.location.pathname, '/polls');
+    assert.equal(h.w.location.pathname, '/feed');
+    assert.equal(h.w.location.search, '?filter=poll');
     assert.equal(h.$('.catalogue-grid'), null);
-    assert.ok(h.$('.polls-page'));
-    assert.match(h.$('.polls-page').textContent, /temporarily unavailable/);
+    assert.ok(h.$('.community-section'));
+    assert.equal(h.$('[data-page="polls"]'), null, 'polls are a feed filter, not a standalone destination');
+    assert.match(h.$('.feed-status').textContent, /temporarily unavailable/);
     retry = true; h.click('[data-action="reload-feed"]'); await tick();
-    assert.match(h.$('.polls-page').textContent, /Be the first/);
+    assert.match(h.$('.feed-empty').textContent, /Nothing here yet/);
+    assert.match(h.w.document.title, /poll/i);
     assert.ok(!h.calls.some(call => call.url.includes('/api/models')));
     h.close();
 }
@@ -188,16 +191,16 @@ for (const mode of ['login','register']) {
     h.close();
 }
 {
-    const h=harness('/settings/profile',{apiEnabled:false,currentUser:member});
-    assert.match(h.$('.settings-avatar').src,/fluent-astronaut-256-[a-f0-9]+\.webp/,'old avatar selections resolve to new art');
+    const legacyMember={...member,avatarChoice:'fluent-astronaut',avatarUrl:'/avatars/optimized/fluent-astronaut-256-legacy.webp'};
+    const h=harness('/settings/profile',{apiEnabled:false,currentUser:legacyMember});
+    assert.match(h.$('.settings-avatar').src,/\/avatars\/orbit-ollie\.svg$/,'retired portrait selections resolve to the illustrated library');
     const choices=[...h.w.document.querySelectorAll('.avatar-choice img')];
-    assert.equal(choices.length,6, 'only the initial male category has images');
+    assert.equal(choices.length,8, 'only the initial maker collection loads its images');
     assert.equal(h.w.document.querySelectorAll('.avatar-choice').length,24);
-    assert.equal(h.w.document.querySelectorAll('[data-avatar-image]').length,18, 'other groups have request-free placeholders');
-    h.click('[data-action="avatar-group"][data-group="Female"]');
-    assert.equal(h.w.document.querySelectorAll('[data-avatar-group="Female"] img').length,6);
-    h.click('[data-action="avatar-group"][data-group="Characters"]');
-    h.click('[data-action="expand-avatars"]');
+    assert.equal(h.w.document.querySelectorAll('[data-avatar-image]').length,16, 'closed collections retain request-free placeholders');
+    h.click('[data-action="avatar-group"][data-group="Creatures"]');
+    assert.equal(h.w.document.querySelectorAll('[data-avatar-group="Creatures"] img').length,8);
+    h.click('[data-action="avatar-group"][data-group="Sidekicks"]');
     assert.equal(h.w.document.querySelectorAll('.avatar-choice img').length,24);
     for (const img of choices) assert.ok(fs.existsSync(new URL(`../public${new URL(img.src).pathname}`,import.meta.url)));
     h.close();
@@ -214,29 +217,34 @@ console.log('PASS: dedicated creation, safe claims, draft retention, duplicate p
     });
     await tick(); h.click('[data-action="comment-toggle"]');h.input('.comment-form input','Keep my unfinished reply');
     const card=h.$('.post-card'); const draft=h.$('.comment-form input');
-    h.click('[data-reaction="laugh"]');h.click('[data-reaction="wow"]');
-    assert.equal(h.calls.filter(call=>call.url.endsWith('/react')).length,1,'rapid reaction clicks send one mutation');
-    assert.equal(h.$('[data-reaction="wow"]').disabled,true);
+    h.click('[data-action="toggle-reactions"]');
+    assert.equal(h.w.document.querySelectorAll('.reaction-choice').length, 6, 'the compact control opens six reaction choices');
+    assert.equal(h.w.document.querySelectorAll('.reaction-choice-label').length, 6, 'each reaction icon has a visible name');
+    assert.match(h.$('.reaction-picker').textContent, /Love[\s\S]*Celebrate[\s\S]*Helpful/, 'the picker presents clear reaction labels');
+    assert.equal(h.w.document.querySelectorAll('.reaction-picker img').length, 0, 'the picker does not render emoji image assets');
+    h.click('[data-reaction="laugh"]');
+    assert.equal(h.calls.filter(call=>call.url.endsWith('/react')).length,1,'one picker choice sends one mutation');
+    assert.equal(h.$('[data-action="toggle-reactions"]').disabled,true);
     respond({reactions:{...post.reactions,laugh:1},myReaction:'laugh'}); await tick();
     assert.equal(h.$('.post-card'),card,'reaction updates must not recreate cards or their images');
     assert.equal(h.$('.comment-form input'),draft);
     assert.equal(draft.value,'Keep my unfinished reply');
-    assert.equal(h.$('[data-reaction="laugh"]').getAttribute('aria-pressed'),'true');
-    h.click('[data-reaction="wow"]');respond({status:503,message:'Please try again'});await tick();
-    assert.equal(h.$('[data-reaction="laugh"]').getAttribute('aria-pressed'),'true','failure retains previous choice');
-    assert.equal(h.$('[data-reaction="wow"]').disabled,false);
+    assert.match(h.$('[data-action="toggle-reactions"]').getAttribute('aria-label'),/current Haha/);
+    h.click('[data-action="toggle-reactions"]');h.click('[data-reaction="wow"]');respond({status:503,message:'Please try again'});await tick();
+    assert.match(h.$('[data-action="toggle-reactions"]').getAttribute('aria-label'),/current Haha/,'failure retains previous choice');
+    assert.equal(h.$('[data-action="toggle-reactions"]').disabled,false);
     h.close();
 }
 {
     const h=harness('/feed',{apiEnabled:false,currentUser:member});await tick();
     const first=h.$('.post-card');const id=first.dataset.post;
     h.click(first.querySelector('[data-action="repost"]'));await tick();
-    const copies=()=>[...h.w.document.querySelectorAll(`[data-action="react"][data-post-id="${id}"][data-reaction="wow"]`)];
+    const copies=()=>[...h.w.document.querySelectorAll(`[data-action="toggle-reactions"][data-post-id="${id}"]`)];
     assert.equal(copies().length,2);
-    h.click(copies()[0]);await tick();
-    assert.ok(copies().every(button=>button.getAttribute('aria-pressed')==='true'),'original and repost reaction views stay in sync');
-    h.click(copies()[1]);await tick();
-    assert.ok(copies().every(button=>button.getAttribute('aria-pressed')==='false'));
+    h.click(copies()[0]);h.click(h.$('[data-reaction="wow"]'));await tick();
+    assert.ok(copies().every(button=>button.classList.contains('is-selected')),'original and repost reaction views stay in sync');
+    h.click(copies()[1]);h.click(h.$('[data-reaction="wow"]'));await tick();
+    assert.ok(copies().every(button=>!button.classList.contains('is-selected')));
     h.close();
 }
-console.log('PASS: reaction mutation guards, failure recovery, stable cards/drafts, original/repost synchronization');
+console.log('PASS: on-demand SVG reaction picker, mutation guards, failure recovery, stable cards/drafts, original/repost synchronization');

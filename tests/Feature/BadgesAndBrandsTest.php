@@ -21,9 +21,10 @@ class BadgesAndBrandsTest extends TestCase
 
     public function test_creation_and_information_pages_have_independent_routes(): void
     {
-        foreach (['create/post', 'create/question', 'create/poll', 'create/launch', 'badges', 'help', 'polls'] as $path) {
+        foreach (['create/post', 'create/question', 'create/poll', 'create/launch', 'badges', 'help'] as $path) {
             $this->get('/'.$path)->assertOk();
         }
+        $this->get('/polls')->assertStatus(301)->assertRedirect('/feed?filter=poll');
         $this->get('/create/model')->assertNotFound();
     }
 

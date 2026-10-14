@@ -94,6 +94,16 @@ for key,name,bg,color,kind in characters:
  # Vector artwork is resolution-independent; layered light adds depth without raster blur.
  svg=f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="512" height="512"><title>{name} — original VibeDock character</title><defs><clipPath id="crop"><rect width="256" height="256" rx="64"/></clipPath><radialGradient id="back" cx=".2" cy=".1" r="1.1"><stop stop-color="#FFFCF1"/><stop offset=".5" stop-color="{bg}"/><stop offset="1" stop-color="{color}"/></radialGradient><linearGradient id="light" x2=".8" y2="1"><stop stop-color="#FFF" stop-opacity=".18"/><stop offset=".55" stop-color="#FFF" stop-opacity="0"/><stop offset="1" stop-color="{INK}" stop-opacity=".12"/></linearGradient></defs><g clip-path="url(#crop)"><rect width="256" height="256" fill="url(#back)"/><circle cx="128" cy="120" r="101" fill="none" stroke="#FFF" stroke-opacity=".5"/><circle cx="128" cy="120" r="112" fill="none" stroke="#FFF" stroke-opacity=".25"/><ellipse cx="128" cy="255" rx="104" ry="53" fill="{INK}" opacity=".07"/><path d="M25 61h14m-7-7v14m175 18h10m-5-5v10" stroke="#FFF" stroke-width="2" stroke-linecap="round"/><g stroke="{INK}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">{body}{face}{props}</g><rect width="256" height="256" fill="url(#light)"/></g></svg>'''
  (OUT/f'{key}.svg').write_text(svg)
-# Data shared by client UI; PHP retains the old choices for existing profiles.
+# Data shared by client UI. Keep the three compact, on-demand collections in sync with the generated art.
 import json
-(ROOT/'resources/data/character-avatars.json').write_text(json.dumps([{'key':key,'label':name,'group':'The cast'} for key,name,*_ in characters],indent=2)+'\n')
+collections = {
+ 'orbit-ollie':'Makers', 'captain-commit':'Makers', 'byte-bard':'Makers', 'agent-loop':'Makers',
+ 'professor-patch':'Makers', 'noodle-ninja':'Makers', 'nova-nomad':'Makers', 'cloud-kid':'Makers',
+ 'pixel-fox':'Creatures', 'dino-debug':'Creatures', 'sir-ships':'Creatures', 'bean-bandit':'Creatures',
+ 'bug-buddy':'Creatures', 'robo-ravi':'Creatures', 'disco-duck':'Creatures', 'cosmic-cat':'Creatures',
+ 'spook-exe':'Sidekicks', 'midnight-moth':'Sidekicks', 'ramen-ronin':'Sidekicks', 'moss-mage':'Sidekicks',
+ 'sheriff-syntax':'Sidekicks', 'neon-gecko':'Sidekicks', 'count-cache':'Sidekicks', 'toast-rider':'Sidekicks',
+}
+(ROOT/'resources/data/character-avatars.json').write_text(json.dumps([
+ {'key':key, 'label':name, 'group':collections[key]} for key,name,*_ in characters
+], indent=2)+'\n')

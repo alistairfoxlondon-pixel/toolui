@@ -15,8 +15,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'home'])->name('home');
 Route::get('/feed', [HomeController::class, 'feed'])->name('feed.page');
 Route::get('/settings/profile', [HomeController::class, 'editProfile'])->middleware(['auth', 'active'])->name('profile.edit');
-Route::redirect('/models', '/polls', 301);
-Route::get('/polls', [HomeController::class, 'polls'])->name('polls.page');
+// Legacy poll URLs now open the poll filter inside the unified community feed.
+Route::redirect('/models', '/feed?filter=poll', 301);
+Route::redirect('/polls', '/feed?filter=poll', 301);
 Route::get('/badges', [HomeController::class, 'badges'])->name('badges.page');
 Route::get('/help', [HomeController::class, 'help'])->name('help.page');
 Route::get('/create/{type}', [HomeController::class, 'create'])->whereIn('type', ['post', 'question', 'poll', 'launch'])->name('create.page');

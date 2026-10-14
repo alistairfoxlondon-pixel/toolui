@@ -1,23 +1,11 @@
-# Licensed community artwork
+# Archived Fluent artwork
 
-Avatar portraits, characters and reaction icons use Microsoft Fluent Emoji 3D
-artwork under MIT. Copyright Microsoft Corporation. See LICENSE in this folder.
-No artwork was AI-generated for this update.
+This directory preserves the previously used Microsoft Fluent Emoji 3D source manifest and MIT license information for historical attribution and old external asset URLs.
 
-Source: https://github.com/microsoft/fluentui-emoji
-The `sources.json` manifest records each original asset path and git blob hash.
+It is **not** the active VibeDock avatar library. The current picker and backend use the original VibeDock SVG illustrations in `public/avatars/`, listed by `resources/data/avatar-assets.json`.
 
-- `public/avatars/optimized/`: 96px and 256px WebP derivatives, quality 86.
-- `public/reactions/`: 64px WebP derivatives of six reaction illustrations.
-- Original `public/avatars/fluent-*.png` and legacy SVGs remain for old external
-  links only. Current frontend/backend library URLs serve optimized WebP.
-- Shared manifests: `resources/data/avatar-assets.json`, `reaction-assets.json`.
-- Filenames contain a content hash so immutable caching is safe.
+- `public/avatars/optimized/` contains the old generated WebP derivatives.
+- `sources.json` records the original Fluent source paths and git blob hashes.
+- `scripts/optimize-community-artwork.py` is retained only to reproduce the archived derivatives if required; it writes an archive-only manifest and never changes the active asset map.
 
-To rebuild, download the licensed source PNGs listed in `sources.json` to a local
-folder, named `<key>.png`. Install Pillow in a Python virtual environment and run:
-
-    python scripts/optimize-community-artwork.py path/to/source-folder
-
-Commit updated manifests and their referenced WebP assets together. Preserve the
-license and source attribution when redistributing these derivatives.
+New avatar work should use the active SVG library rather than adding to this archive.

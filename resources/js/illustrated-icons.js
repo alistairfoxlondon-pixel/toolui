@@ -2,7 +2,6 @@
 // Shared viewBox and stroke keep these legible from 18px to 32px.
 const accent = 'class="icon-accent"';
 export const ILLUSTRATED_ICONS = {
-    add_reaction: `<path ${accent} d="M28 16A12 12 0 1 1 16 4"/><path d="M11 12v2m9-2v2M10 20c3 5 9 5 12 0M25 3v8m-4-4h8"/>`,
     home: `<path ${accent} d="M5 14 16 5l11 9v13H5Z"/><path d="m3 15 13-11 13 11M6 13v15h20V13M12 28V18h8v10"/>`,
     explore: `<circle ${accent} cx="16" cy="16" r="12"/><path d="m21 11-3 7-7 3 3-7Z"/><circle cx="16" cy="16" r="1" fill="currentColor" stroke="none"/>`,
     forum: `<path ${accent} d="M13 13h13v12h-5l-5 4v-4h-3Z"/><path fill="white" d="M5 5h17v15H12l-6 5v-5H5Z"/><path d="M9 10h9M9 14h6"/>`,

@@ -15,6 +15,10 @@ const pages = {
 export function updateMetadata(state, apiEnabled) {
     const post = state.initialPostId && state.posts.find(post => post.id === String(state.initialPostId));
     let [title, description] = pages[state.page] || [state.page.replaceAll('-', ' '), 'Build, share, and connect with makers on VibeDock.'];
+    if (state.page === 'feed' && state.filter === 'poll') {
+        title = 'Community polls in the feed';
+        description = 'Vote, compare ideas, and start a poll with fellow makers in the VibeDock community feed.';
+    }
     if (state.page === 'profile' && state.profileData?.user) {
         title = `${state.profileData.user.name} (@${state.profileData.user.username})`;
         description = state.profileData.user.bio || `Posts and launches by ${state.profileData.user.name}.`;

@@ -20,7 +20,6 @@ class HomeController extends Controller
 
     public function editProfile(): View { return $this->staticPage('profile-edit'); }
 
-    public function polls(): View { return $this->staticPage('polls'); }
     public function badges(): View { return $this->staticPage('badges'); }
     public function help(): View { return $this->staticPage('help'); }
     public function create(string $type): View { return $this->staticPage('create-'.$type); }
@@ -117,7 +116,6 @@ class HomeController extends Controller
         $urls = [
             url('/'),
             url('/feed'),
-            url('/polls'),
             url('/badges'),
             url('/help'),
             url('/launches'),
