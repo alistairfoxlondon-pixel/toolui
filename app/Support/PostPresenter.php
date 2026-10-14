@@ -1,0 +1,106 @@
+<?php
+
+namespace App\Support;
+
+use App\Models\Post;
+use App\Models\User;
+use Illuminate\Support\Facades\Storage;
+
+class PostPresenter
+{
+    public static function format(Post $post, ?User $viewer, bool $includeSource = true): array
+    {
+        $options = $post->options ?? [];
+        $voteCounts = array_fill(0, count($options), 0);
+        $myVote = null;
+
+        foreach ($post->votes as $vote) {
+            if (array_key_exists((int) $vote->option_index, $voteCounts)) {
+                $voteCounts[(int) $vote->option_index]++;
+            }
+            if ($viewer && (int) $vote->user_id === (int) $viewer->id) {
+                $myVote = (int) $vote->option_index;
+            }
+        }
+
+        $reactionCounts = ['celebrate' => 0, 'helpful' => 0, 'support' => 0];
+        $myReaction = null;
+        foreach ($post->reactions as $reaction) {
+            if (array_key_exists($reaction->reaction, $reactionCounts)) {
+                $reactionCounts[$reaction->reaction]++;
+            }
+            if ($viewer && (int) $reaction->user_id === (int) $viewer->id) {
+                $myReaction = $reaction->reaction;
+            }
+        }
+
+        $upvotes = 0;
+        $downvotes = 0;
+        $myLaunchVote = null;
+        foreach ($post->launchVotes as $launchVote) {
+            if ((int) $launchVote->vote === 1) {
+                $upvotes++;
+            } elseif ((int) $launchVote->vote === -1) {
+                $downvotes++;
+            }
+            if ($viewer && (int) $launchVote->user_id === (int) $viewer->id) {
+                $myLaunchVote = (int) $launchVote->vote;
+            }
+        }
+
+        $author = $post->author;
+        $source = $includeSource && $post->type === 'repost' && $post->sourcePost
+            ? self::format($post->sourcePost, $viewer, false)
+            : null;
+
+        return [
+            'id' => (string) $post->id,
+            'type' => $post->type,
+            'title' => $post->title,
+            'body' => $post->body,
+            'category' => $post->category,
+            'launchCategory' => $post->launch_category,
+            'projectUrl' => $post->project_url,
+            'imageUrl' => $post->image_path ? Storage::disk('public')->url($post->image_path) : null,
+            'logoUrl' => $post->logo_path ? Storage::disk('public')->url($post->logo_path) : null,
+            'options' => $options,
+            'votes' => $voteCounts,
+            'votedOption' => $myVote,
+            'authorName' => $author?->name ?? 'Community member',
+            'author' => $author ? self::userSummary($author) : null,
+            'createdAt' => $post->created_at?->diffForHumans() ?? 'just now',
+            'likes' => (int) ($post->likes_count ?? ($post->relationLoaded('likes') ? $post->likes->count() : 0)),
+            'liked' => $viewer ? ($post->relationLoaded('likes')
+                ? $post->likes->contains('id', $viewer->id)
+                : $post->likes()->whereKey($viewer->id)->exists()) : false,
+            'reactions' => $reactionCounts,
+            'myReaction' => $myReaction,
+            'commentsCount' => (int) ($post->comments_count ?? 0),
+            'repostsCount' => (int) ($post->reposts_count ?? 0),
+            'upvotes' => $upvotes,
+            'downvotes' => $downvotes,
+            'launchVote' => $myLaunchVote,
+            'sourcePost' => $source,
+            'isHidden' => (bool) $post->is_hidden,
+        ];
+    }
+
+    public static function userSummary(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'bio' => $user->bio,
+            'profession' => $user->profession,
+            'skills' => $user->skills ?? [],
+            'website' => $user->website,
+            'avatarChoice' => $user->avatar_choice ?: 'neutral',
+            'avatarUploaded' => (bool) $user->avatar_path,
+            'avatarUrl' => $user->avatar_path
+                ? Storage::disk('public')->url($user->avatar_path)
+                : AvatarLibrary::url($user->avatar_choice),
+            'isAdmin' => (bool) $user->is_admin,
+        ];
+    }
+}
