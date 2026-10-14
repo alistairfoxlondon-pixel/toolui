@@ -9,7 +9,9 @@ namespace App\Support;
 final class Seo
 {
     private const PAGES = [
-        'models' => ['AI Models — free and paid releases', 'Newly released AI models shared by the community, including which ones are free, freemium, or paid.', '/models'],
+        'models' => ['AI Model Ratings for Vibe Coding | VibeDock', 'Compare an admin-curated AI model catalogue. Rate the models you have used for vibe coding and see community scores.', '/models'],
+        'feed' => ['Community Feed | VibeDock', 'Share a build, ask a coding question, and gather feedback with community polls.', '/feed'],
+        'profile-edit' => ['Edit Your Profile | VibeDock', 'Edit your maker profile, skills, avatar, and cover.', '/settings/profile'],
         'launches' => ['Launches — community projects', 'Discover tools, apps, and websites launched by VibeDock makers.', '/launches'],
         'rankings' => ['Rankings — top tools and makers', 'Community launch votes and the rolling engagement leaderboard.', '/rankings'],
         'community-chat' => ['Community chat', 'Join the shared VibeDock chat and talk with other makers in real time.', '/community-chat'],
@@ -35,6 +37,6 @@ final class Seo
 
     public static function home(): array
     {
-        return ['VibeDock | Build together', 'A community for vibe coders and makers: share work in progress, ask questions, run polls, share AI models, and launch projects.', '/'];
+        return ['title' => 'VibeDock | Build together', 'description' => 'Launch your vibe-coded app, find fellow makers, ask questions, and rate the AI models you build with.', 'path' => '/'];
     }
 }

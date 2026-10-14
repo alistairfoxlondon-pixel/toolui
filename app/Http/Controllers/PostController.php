@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Support\ContentModeration;
+
 use App\Models\Comment;
 use App\Models\Post;
 use App\Models\PostLike;
@@ -34,17 +36,17 @@ class PostController extends Controller
     public function index(Request $request): JsonResponse
     {
         $query = Post::query()
-            ->where('is_hidden', false)
+            ->where('type', '!=', 'model')->where('is_hidden', false)
             ->whereHas('author', fn ($author) => $author->where('is_active', true))
             ->where(function ($query) {
                 $query->where('type', '!=', 'repost')
-                    ->orWhereHas('sourcePost', fn ($source) => $source->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true)));
+                    ->orWhereHas('sourcePost', fn ($source) => $source->where('type', '!=', 'model')->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true)));
             })
             ->with($this->postRelations)
             ->withCount(['comments', 'likes', 'reposts']);
 
         $type = $request->query('type');
-        if (in_array($type, ['discussion', 'question', 'poll', 'launch', 'model', 'repost'], true)) {
+        if (in_array($type, ['discussion', 'question', 'poll', 'launch', 'repost'], true)) {
             $query->where('type', $type);
         }
 
@@ -60,19 +62,18 @@ class PostController extends Controller
         $type = $request->input('type');
 
         $data = $request->validate([
-            'type' => ['required', 'in:discussion,question,poll,launch,model'],
-            'title' => in_array($type, ['question', 'poll', 'launch', 'model'], true)
+            'type' => ['required', 'in:discussion,question,poll,launch'],
+            'title' => in_array($type, ['question', 'poll', 'launch'], true)
                 ? ['required', 'string', 'max:140']
                 : ['nullable', 'string', 'max:140'],
-            'body' => in_array($type, ['discussion', 'question', 'launch', 'model'], true)
+            'body' => in_array($type, ['discussion', 'question', 'launch'], true)
                 ? ['required', 'string', 'max:5000']
                 : ['nullable', 'string', 'max:5000'],
             'category' => ['nullable', 'string', 'max:48'],
             'launch_category' => ['nullable', 'in:ai_tool,ai_app,app,website,other'],
-            'model_provider' => $type === 'model' ? ['nullable', 'string', 'max:60'] : ['prohibited'],
-            'model_access' => $type === 'model'
-                ? ['nullable', 'in:free,freemium,paid']
-                : ['prohibited'],
+            'model_provider' => ['prohibited'],
+            'model_access' => ['prohibited'],
+            'seo_description' => $type === 'launch' ? ['nullable', 'string', 'max:160'] : ['prohibited'],
             'project_url' => $type === 'launch'
                 ? ['required', 'url', 'max:2048']
                 : ['nullable', 'url', 'max:2048'],
@@ -84,6 +85,7 @@ class PostController extends Controller
             'logo' => ['nullable', 'file', 'mimes:svg,jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
+        ContentModeration::check(implode(' ', [$data['title'] ?? '', $data['body'] ?? '', $data['seo_description'] ?? '', ...($data['options'] ?? [])]));
         try {
             $imagePath = $request->hasFile('image')
                 ? ImageOptimizer::store($request->file('image'), 'posts', 1600, 82)
@@ -100,6 +102,7 @@ class PostController extends Controller
             'user_id' => $request->user()->id,
             'type' => $data['type'],
             'title' => $data['title'] ?? null,
+            'seo_description' => $data['seo_description'] ?? null,
             'body' => $data['body'] ?? null,
             'category' => $data['type'] === 'model' ? ($data['category'] ?? 'AI models') : ($data['category'] ?? null),
             'launch_category' => $data['type'] === 'launch' ? ($data['launch_category'] ?? 'other') : null,
@@ -221,6 +224,7 @@ class PostController extends Controller
         $this->ensureAvailable($post);
         $data = $request->validate(['body' => ['required', 'string', 'min:1', 'max:2000']]);
 
+        ContentModeration::check($data['body']);
         $comment = Comment::create([
             'post_id' => $post->id,
             'user_id' => $request->user()->id,
@@ -266,6 +270,7 @@ class PostController extends Controller
         abort_if(! $original, 404);
         $this->ensureAvailable($original);
 
+        ContentModeration::check($data['body'] ?? '');
         $repost = Post::create([
             'user_id' => $request->user()->id,
             'type' => 'repost',
@@ -278,7 +283,7 @@ class PostController extends Controller
     }
     private function ensureAvailable(Post $post): void
     {
-        abort_if($post->is_hidden || ! $post->author()->where('is_active', true)->exists(), 404);
+        abort_if($post->type === 'model' || $post->is_hidden || ! $post->author()->where('is_active', true)->exists(), 404);
     }
 
 }

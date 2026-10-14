@@ -31,23 +31,19 @@ class RankingController extends Controller
             ->with($this->postRelations)
             ->withCount(['comments', 'likes', 'reposts']);
 
-        $allLaunches = (clone $base)->latest()->limit(100)->get();
-        $tools = $allLaunches
-            ->filter(fn (Post $post) => in_array($post->launch_category, ['ai_tool', 'ai_app'], true))
-            ->sortByDesc(fn (Post $post) => $post->launchVotes->sum(fn ($vote) => (int) $vote->vote))
-            ->take(30)
-            ->values()
+        $tools = $base->withSum('launchVotes as net_votes', 'vote')
+            ->orderByRaw('COALESCE(net_votes, 0) DESC')->orderByDesc('id')->limit(30)->get()
             ->map(fn (Post $post) => PostPresenter::format($post, $viewer));
 
         $cutoff = now()->subDays(30);
         $leaders = DB::table('users as u')
             ->leftJoin('posts as p', function (JoinClause $join) use ($cutoff) {
                 $join->on('p.user_id', '=', 'u.id')
-                    ->where('p.is_hidden', '=', false)
+                    ->where('p.is_hidden', '=', false)->where('p.type', '!=', 'model')
                     ->where('p.created_at', '>=', $cutoff);
             })
-            ->leftJoin('post_likes as pl', 'pl.post_id', '=', 'p.id')
-            ->leftJoin('comments as c', 'c.post_id', '=', 'p.id')
+            ->leftJoin('post_likes as pl', fn (JoinClause $join) => $join->on('pl.post_id', '=', 'p.id')->where('pl.created_at', '>=', $cutoff))
+            ->leftJoin('comments as c', fn (JoinClause $join) => $join->on('c.post_id', '=', 'p.id')->where('c.created_at', '>=', $cutoff))
             ->leftJoin('comments as authored_comments', function (JoinClause $join) use ($cutoff) {
                 $join->on('authored_comments.user_id', '=', 'u.id')
                     ->where('authored_comments.created_at', '>=', $cutoff);

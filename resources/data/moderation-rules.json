@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "description": "Conservative baseline rules; not comprehensive language or context detection. Review false positives and extend before public launch.",
+  "patterns": [
+    "(?:n\\s*i\\s*g\\s*g\\s*(?:e\\s*r|a)s?|f\\s*a\\s*g\\s*g\\s*o\\s*t\\s*s?|k\\s*i\\s*k\\s*e\\s*s?)",
+    "(?:kill\\s*yourself|go kill\\s*yourself|you should die|i (?:will|am going to) (?:kill|rape) you)",
+    "(?:kill|exterminate|gas) (?:all |the )?(?:muslims|jews|christians|hindus|blacks|gays|immigrants|refugees)",
+    "(?:muslims|jews|blacks|gays|immigrants|refugees) (?:are (?:vermin|subhuman)|should (?:die|be killed))",
+    "(?:তোমাকে মেরে ফেলব|তোকে মেরে ফেলব|নিজেকে মেরে ফেল|तुम्हें मार दूंगा)",
+    "(?:fuck(?:ing)? (?:you|off)|you (?:are |re )?(?:a |an )?(?:worthless )?(?:idiot|moron|bitch|asshole))"
+  ]
+}

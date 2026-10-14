@@ -1,15 +1,10 @@
-/* jsdom smoke test for the VibeDock SPA (preview mode).
- * Build the bundle first:
- *   npx esbuild resources/js/app.js --bundle --format=iife --platform=browser --loader:.css=empty --outfile=/tmp/app-smoke.js
- * Then run:
- *   node scripts/smoke-test.mjs
- */
+/* Run with npm test: exercises the standalone community UI without PHP. */
 import fs from 'node:fs';
 import { JSDOM, VirtualConsole } from 'jsdom';
 
-const bundle = '/tmp/app-smoke.js';
+const bundle = new URL('../.cache/app-smoke.js', import.meta.url);
 if (!fs.existsSync(bundle)) {
-    console.error('missing ' + bundle + ' — build it with esbuild first');
+    console.error('Missing smoke-test bundle — run npm test.');
     process.exit(1);
 }
 
@@ -34,6 +29,7 @@ const { window } = dom;
 const { document } = window;
 
 window.scrollTo = () => {};
+window.HTMLElement.prototype.scrollIntoView = () => {};
 
 let failures = 0;
 const check = (label, condition) => {
@@ -60,16 +56,53 @@ console.log('boot');
 check('app shell renders', Boolean($('#app')) && $('#app').innerHTML.length > 500);
 check('header renders', Boolean($('.site-header')));
 check('hero renders', Boolean($('.hero')));
-check('seed posts render', $$('.post-card').length >= 5);
-check('hero image renders with illustration', Boolean($('.hero-image')) && /hero-maker\.webp$/.test($('.hero-image').getAttribute('src') || ''));
-check('icons render (Material Symbols paths)', $$('svg.icon path').length > 10);
+check('landing is separate from feed', $$('.post-card').length === 0);
+check('hero image renders with illustration', Boolean($('.hero-image')) && /makers-together\.webp$/.test($('.hero-image').getAttribute('src') || ''));
+check('four visual feature cards render', $$('.feature-card').length === 4);
+check('hero image has responsive source and priority', $('.hero-image').hasAttribute('srcset') && $('.hero-image').getAttribute('fetchpriority') === 'high');
+check('hero welcomes signed-out members', /Join the community/.test($('.hero-actions').textContent));
+check('landing contains illustrated assets', $$('.dock-illustration').length >= 5);
+check('hero stays under 30 words', $('.hero').textContent.trim().split(/\s+/).length <= 30);
+check('utility icons render (Material Symbols paths)', $$('svg.icon path').length > 10);
 check('document title set', /VibeDock/.test(document.title));
 
+console.log('search accessibility');
+check('closed search has no dangling ARIA reference', !$('[data-search]').hasAttribute('aria-controls'));
+type($('[data-search]'), 'first draft');
+await new Promise((resolve) => setTimeout(resolve, 250));
+check('search finds a post', Boolean($('.search-result[data-action="open-post"]')));
+check('open search references a real region', $('[data-search]').getAttribute('aria-controls') === $('.search-results').id);
+type($('[data-search]'), '');
+await new Promise((resolve) => setTimeout(resolve, 250));
+check('clearing search removes ARIA reference', !$('[data-search]').hasAttribute('aria-controls'));
+
+console.log('compact controls');
+click($('[data-action="toggle-search"]'));
+check('mobile search opens and receives focus', $('.nav-search').classList.contains('is-open') && document.activeElement === $('[data-search]'));
+document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+check('Escape closes mobile search and returns focus', !$('.nav-search').classList.contains('is-open') && document.activeElement === $('[data-action="toggle-search"]'));
+click($('[data-action="go-page"][data-page="feed"]'));
+await flush();
+check('feed has community posts', $$('.post-card').length >= 5);
+const mobileFilter = $('[data-feed-filter]');
+mobileFilter.value = 'poll';
+mobileFilter.dispatchEvent(new window.Event('change', { bubbles: true }));
+check('mobile filter changes feed', Boolean($('.poll-panel')) && $('.feed-tab[data-filter="poll"]').getAttribute('aria-selected') === 'true');
+click($('.feed-tab[data-filter="all"]'));
+
 console.log('public navigation (signed out)');
+click($('.feed-tab[data-filter="discussion"]'));
+await flush();
+check('mobile filter stays in sync', $('[data-feed-filter]').value === 'discussion');
+check('discussion tab announces selection', $('.feed-tab[data-filter="discussion"]').getAttribute('aria-selected') === 'true');
+check('discussion tab filters the feed', $$('.post-card').length > 0 && Boolean($('.feed-tab[data-filter="discussion"].is-active')));
+click($('.feed-tab[data-filter="all"]'));
+await flush();
 click($('[data-action="go-page"][data-page="models"]'));
 await flush();
-check('models page renders model tiles', $$('.model-tile').length >= 1);
-check('models page has access badges', $$('.model-access-badge').length >= 1);
+check('models page renders catalogue cards', $$('.catalogue-card').length >= 1);
+check('models offer member ratings', $$('.rating-star').length >= 5);
+check('unrated models show no invented ratings', /Not rated/.test($('.catalogue-grid').textContent));
 check('title updated for models', /model/i.test(document.title));
 
 click($('[data-action="go-page"][data-page="launches"]'));
@@ -110,8 +143,23 @@ if (loginForm) {
 }
 check('demo login accepted', Boolean($('.user-pill, [data-action="logout"]')));
 
+console.log('member model ratings');
+click($('[data-action="go-page"][data-page="models"]'));
+await flush();
+const modelId = $('.rating-star').dataset.modelId;
+click($(`.rating-star[data-model-id="${modelId}"][data-score="5"]`));
+await flush();
+check('member can rate a catalogue model', $(`.rating-star[data-model-id="${modelId}"][data-score="5"]`).getAttribute('aria-pressed') === 'true');
+click($(`.rating-star[data-model-id="${modelId}"][data-score="3"]`));
+await flush();
+check('rating edits do not add duplicate votes', $(`.rating-star[data-model-id="${modelId}"]`).closest('article').querySelector('.model-score').textContent.includes('1 rating'));
+check('rating change persists', Object.values(JSON.parse(window.localStorage.getItem('vibedock-preview-model-ratings')))[0][modelId] === 3);
+
 console.log('feed interactions');
 click($('[data-action="go-page"][data-page="home"]'));
+await flush();
+check('signed-in hero offers posting', /Share a build/.test($('.hero-actions').textContent));
+click($('[data-action="go-page"][data-page="feed"]'));
 await flush();
 const allTab = $$('.feed-tab').find((tab) => /^All/.test(tab.textContent.trim()));
 if (allTab) click(allTab);
@@ -128,6 +176,16 @@ const likeButton = $('.post-action[data-action="like"]');
 if (likeButton) click(likeButton);
 await flush();
 check('like handled without error', errors.length === 0);
+const reactionPicker = $('.reaction-picker');
+reactionPicker.open = true;
+click(reactionPicker.querySelector('[data-reaction="celebrate"]'));
+await flush();
+check('reaction picker preserves reactions', Boolean($('.reaction-action[data-reaction="celebrate"].is-selected')));
+const openPicker = $('.reaction-picker');
+openPicker.open = true;
+document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+check('Escape closes reactions and restores focus', !openPicker.open && document.activeElement === openPicker.querySelector('summary'));
+
 
 console.log('community chat (signed in)');
 click($('[data-action="go-page"][data-page="community-chat"]'));
@@ -141,6 +199,65 @@ if (chatForm) {
 }
 check('chat message sends in preview', /Smoke test message/.test($('.community-chat-transcript').textContent));
 
+console.log('message safety');
+const beforeUnsafe = $$('.community-chat-message').length;
+const unsafeForm = $('form[data-form="community-chat"]');
+type(unsafeForm.querySelector('textarea'), 'I will kill you');
+submit(unsafeForm);
+await flush();
+check('unsafe chat message is blocked before posting', $$('.community-chat-message').length === beforeUnsafe && /Not sent/.test($('.chat-error').textContent));
+check('blocked chat draft is preserved', $('textarea[name="body"]').value === 'I will kill you');
+type($('textarea[name="body"]'), '');
+click($('[data-action="report-message"]'));
+await flush();
+const reportForm = $('form[data-form="message-report"]');
+check('received message opens report form', Boolean(reportForm));
+type(reportForm.querySelector('[name="reason"]'), 'harassment');
+submit(reportForm);
+await flush();
+check('preview report is saved honestly', /demo/.test($('.toast').textContent) && Boolean($('[data-action="report-message"][disabled]')));
+click($('[data-action="block-member"]'));
+await flush();
+click($('[data-action="confirm-block"]'));
+await flush();
+check('blocked author disappears from community messages', !/Maya Chen/.test($('.community-chat-transcript').textContent));
+click($('[data-action="blocked-members"]'));
+await flush();
+check('blocked-member management renders', Boolean($('[data-action="unblock-member"]')));
+click($('[data-action="unblock-member"]'));
+await flush();
+click($('.messaging-dialog [data-action="close-modal"]'));
+await flush();
+check('unblocking restores preview messages', /Maya Chen/.test($('.community-chat-transcript').textContent));
+
+console.log('private messaging');
+click($('[data-action="go-page"][data-page="messages"]'));
+await flush();
+click($('[data-action="new-message"]'));
+await flush();
+check('new-message picker has real preview members', $$('.member-result[data-action="open-message-thread"]').length >= 1);
+click($('.member-result[data-action="open-message-thread"]'));
+await flush();
+const privateForm = $('form[data-form="message"]');
+check('non-friend private thread is enabled', Boolean(privateForm) && !privateForm.querySelector('textarea').disabled);
+type(privateForm.querySelector('textarea'), 'Hello from the private inbox.');
+submit(privateForm);
+await flush();
+check('private message sends and persists', /Hello from the private inbox/.test($('#thread-messages').textContent) && /Hello from the private inbox/.test(window.localStorage.getItem('vibedock-preview-demomaker-threads')));
+const privateUnsafe = $('form[data-form="message"]');
+type(privateUnsafe.querySelector('textarea'), 'kill yourself');
+submit(privateUnsafe);
+await flush();
+check('unsafe private message is blocked', /Not sent/.test($('.chat-error').textContent) && !/kill yourself/.test($('#thread-messages').textContent));
+click($('.thread-block'));
+await flush();
+click($('[data-action="confirm-block"]'));
+await flush();
+check('blocked private thread disables composer', $('form[data-form="message"] textarea').disabled);
+click($('.thread-block'));
+await flush();
+check('unblocking re-enables private composer', !$('form[data-form="message"] textarea').disabled);
+
 console.log('compose modal');
 click($('[data-action="go-page"][data-page="home"]'));
 await flush();
@@ -148,15 +265,13 @@ click($('.composer-prompt[data-action="open-compose"]') || $('[data-action="open
 await flush();
 check('compose modal opens', Boolean($('.compose-dialog')));
 const typeSwitches = $$('.compose-type-switch button, .compose-type-option');
-check('compose has 5 types', typeSwitches.length === 5);
-const modelSwitch = typeSwitches.find((b) => /model/i.test(b.textContent));
-if (modelSwitch) click(modelSwitch);
-await flush();
-check('model compose shows access + provider fields', Boolean($('.compose-form [name="model_access"]')));
+check('compose has four member post types', typeSwitches.length === 4);
+check('members cannot compose models', !typeSwitches.some(b => /model/i.test(b.textContent)));
 const launchSwitch = typeSwitches.find((b) => /launch/i.test(b.textContent));
 if (launchSwitch) click(launchSwitch);
 await flush();
 check('launch compose has project url field', Boolean($('input[name="project_url"]')));
+check('launch has SEO description', Boolean($('[name="seo_description"]')));
 const closeButtons = $$('[data-action="close-modal"]');
 if (closeButtons.length) click(closeButtons[closeButtons.length - 1]);
 await flush();
@@ -171,11 +286,17 @@ check('cover has a gradient class', Boolean($('.profile-cover[class*="cover-"]:n
 const editButton = $('[data-action="edit-profile"]');
 if (editButton) click(editButton);
 await flush();
-check('profile edit dialog opens', Boolean($('.profile-edit-dialog')));
+check('profile editor is a dedicated page', Boolean($('.profile-edit-page')) && window.location.pathname === '/settings/profile' && !$('.modal-backdrop'));
+check('60 illustrated skills available', $$('.skill-option .skill-illustration').length === 60);
+click($('.skill-option[data-skill="React"]'));
+check('skill selection updates profile field', /React/.test($('input[name="skills"]').value) && $('.skill-option[data-skill="React"]').getAttribute('aria-pressed') === 'true');
+type($('[data-skill-search]'), 'Python');
+check('skill search filters choices', $$('.skill-option:not([hidden])').length === 1);
+type($('[data-skill-search]'), '');
 check('cover picker lists 8 choices', $$('.cover-choice').length === 8);
 check('cover swatch classes emitted', $$('.cover-swatch-sunset, .cover-swatch-grape, .cover-swatch-ocean').length >= 3);
 check('avatar picker lists 15+ choices', $$('.avatar-choice').length >= 15);
-check('avatar picker offers random', /random/i.test($('.profile-edit-dialog').textContent));
+check('avatar picker offers random', /random/i.test($('.profile-edit-page').textContent));
 const coverChoice = $$('.cover-choice')[2];
 if (coverChoice) {
     click(coverChoice);
@@ -187,7 +308,8 @@ if (saveForm) {
     submit(saveForm);
     await flush();
 }
-check('profile save closes dialog', !$('.profile-edit-dialog'));
+check('profile save returns to profile', !$('.profile-edit-page') && Boolean($('.profile-cover')));
+check('profile renders illustrated selected skills', $$('.profile-skill .skill-illustration').length >= 1);
 
 console.log('messages + admin preview');
 click($('[data-action="go-page"][data-page="messages"]'));

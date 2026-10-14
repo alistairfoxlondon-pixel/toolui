@@ -1,16 +1,16 @@
-/* VibeDock admin — Material 3 pink theme */
+/* VibeDock admin — green community theme */
 
 :root {
     --admin-font: 'Telenor Evolution', 'Telenor', 'Figtree Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-    --admin-primary: #C2185B;
-    --admin-primary-hover: #AD1457;
-    --admin-primary-soft: #FCE4EC;
+    --admin-primary: #28724F;
+    --admin-primary-hover: #1F5B3E;
+    --admin-primary-soft: #EDF6E8;
     --admin-ink: #1D1B20;
     --admin-muted: #5D5764;
     --admin-faint: #8B8494;
     --admin-border: rgba(29, 27, 32, 0.1);
     --admin-surface: #FFFFFF;
-    --admin-bg: #F8F4F6;
+    --admin-bg: #F7F8F4;
     --admin-danger: #C62844;
     --admin-danger-soft: #FDE9ED;
     --admin-radius: 12px;
@@ -162,3 +162,12 @@ body.admin-page {
     .admin-report-actions { align-self: stretch; }
     .admin-chat-row { padding: 13px 12px; }
 }
+
+.model-editor { border-top: 1px solid var(--admin-border); padding: 16px 0; }
+.model-editor summary { cursor: pointer; min-height: 32px; font-weight: 600; }
+.model-admin-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding-top: 16px; }
+.model-admin-form label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.model-admin-form input, .model-admin-form textarea, .model-admin-form select { width: 100%; min-height: 44px; border: 1px solid var(--admin-border); border-radius: 8px; padding: 10px; background: #fff; font: inherit; }
+.model-admin-form .wide { grid-column: 1 / -1; }
+.model-admin-form button { align-self: end; min-height: 44px; }
+@media (max-width: 600px) { .model-admin-form { grid-template-columns: minmax(0, 1fr); } }

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\CommunityChatMessage;
+use App\Models\UserBlock;
+use App\Support\ContentModeration;
 use App\Support\PostPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +15,8 @@ class CommunityChatController extends Controller
     {
         $afterId = max(0, (int) $request->query('after_id', 0));
         $query = CommunityChatMessage::query()
+            ->where('is_hidden', false)
+            ->whereNotIn('user_id', UserBlock::excludedIds($request->user()->id))
             ->with('user:id,name,username,bio,profession,skills,website,avatar_path,avatar_choice,is_admin')
             ->whereHas('user', fn ($users) => $users->where('is_active', true));
 
@@ -28,6 +32,8 @@ class CommunityChatController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate(['body' => ['required', 'string', 'min:1', 'max:500']]);
+        abort_if(trim($data['body']) === '', 422, 'Enter a message.');
+        ContentModeration::check($data['body']);
         $message = CommunityChatMessage::create([
             'user_id' => $request->user()->id,
             'body' => trim($data['body']),

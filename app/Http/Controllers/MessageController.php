@@ -2,128 +2,67 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DirectMessage;
-use App\Models\FriendRequest;
-use App\Models\User;
-use App\Support\PostPresenter;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Models\{DirectMessage, User, UserBlock};
+use App\Support\{ContentModeration, PostPresenter};
+use Illuminate\Http\{JsonResponse, Request};
 
 class MessageController extends Controller
 {
     public function conversations(Request $request): JsonResponse
     {
-        $userId = $request->user()->id;
-        $friendIds = FriendRequest::query()
-            ->where('status', 'accepted')
-            ->where(fn ($query) => $query->where('sender_id', $userId)->orWhere('recipient_id', $userId))
-            ->get()
-            ->map(fn (FriendRequest $friend) => (int) ($friend->sender_id === $userId ? $friend->recipient_id : $friend->sender_id))
-            ->unique()
-            ->values();
-
-        $friends = User::query()
-            ->whereIn('id', $friendIds)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(function (User $friend) use ($userId) {
-                $latest = DirectMessage::query()
-                    ->where(fn ($query) => $query
-                        ->where('sender_id', $userId)->where('recipient_id', $friend->id))
-                    ->orWhere(fn ($query) => $query
-                        ->where('sender_id', $friend->id)->where('recipient_id', $userId))
-                    ->latest()
-                    ->first();
-
-                $unread = DirectMessage::query()
-                    ->where('sender_id', $friend->id)
-                    ->where('recipient_id', $userId)
-                    ->whereNull('read_at')
-                    ->count();
-
-                return [
-                    'user' => PostPresenter::userSummary($friend),
-                    'latestMessage' => $latest ? [
-                        'body' => $latest->body,
-                        'createdAt' => $latest->created_at->diffForHumans(),
-                        'sentByMe' => (int) $latest->sender_id === (int) $userId,
-                    ] : null,
-                    'unreadCount' => $unread,
-                ];
-            });
-
-        return response()->json(['data' => $friends]);
+        $id = (int) $request->user()->id;
+        $latestIds = DirectMessage::where(fn ($q) => $q->where('sender_id', $id)->orWhere('recipient_id', $id))
+            ->where('is_hidden', false)
+            ->selectRaw('MAX(id) AS id')
+            ->groupByRaw('CASE WHEN sender_id = ? THEN recipient_id ELSE sender_id END', [$id]);
+        $blocked = UserBlock::excludedIds($id);
+        $unread = DirectMessage::where('recipient_id', $id)->where('is_hidden', false)->whereNull('read_at')
+            ->selectRaw('sender_id, COUNT(*) AS total')->groupBy('sender_id')->pluck('total', 'sender_id');
+        $data = DirectMessage::with(['sender', 'recipient'])->whereIn('id', $latestIds)->latest('id')->limit(100)->get()
+            ->filter(fn ($m) => ((int) $m->sender_id === $id ? $m->recipient : $m->sender)?->is_active)
+            ->map(function ($m) use ($id, $blocked, $unread) {
+                $peer = (int) $m->sender_id === $id ? $m->recipient : $m->sender;
+                return ['user' => PostPresenter::userSummary($peer), 'messagingBlocked' => in_array((int) $peer->id, $blocked),
+                    'latestMessage' => ['body' => $m->body, 'createdAt' => $m->created_at->diffForHumans(), 'sentByMe' => (int) $m->sender_id === $id],
+                    'unreadCount' => (int) ($unread[$peer->id] ?? 0)];
+            })->values();
+        return response()->json(['data' => $data]);
     }
 
     public function thread(Request $request, User $user): JsonResponse
     {
-        $this->ensureFriends($request->user(), $user);
-        $senderId = $request->user()->id;
-        $recipientId = $user->id;
-
-        DirectMessage::query()
-            ->where('sender_id', $recipientId)
-            ->where('recipient_id', $senderId)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
-
-        $messages = DirectMessage::query()
-            ->with('sender:id,name,username,avatar_path')
-            ->where(fn ($query) => $query
-                ->where('sender_id', $senderId)->where('recipient_id', $recipientId))
-            ->orWhere(fn ($query) => $query
-                ->where('sender_id', $recipientId)->where('recipient_id', $senderId))
-            ->orderBy('id')
-            ->limit(100)
-            ->get()
-            ->map(fn (DirectMessage $message) => [
-                'id' => $message->id,
-                'body' => $message->body,
-                'createdAt' => $message->created_at->diffForHumans(),
-                'sentByMe' => (int) $message->sender_id === (int) $senderId,
-                'sender' => PostPresenter::userSummary($message->sender),
-            ]);
-
+        $viewer = $request->user();
+        abort_if($viewer->is($user) || ! $user->is_active, 404);
+        DirectMessage::where('sender_id', $user->id)->where('recipient_id', $viewer->id)->whereNull('read_at')->update(['read_at' => now()]);
+        $messages = DirectMessage::with('sender')->where('is_hidden', false)
+            ->where(fn ($q) => $q
+                ->where(fn ($p) => $p->where('sender_id', $viewer->id)->where('recipient_id', $user->id))
+                ->orWhere(fn ($p) => $p->where('sender_id', $user->id)->where('recipient_id', $viewer->id)))
+            ->latest('id')->limit(100)->get()->reverse()->values();
         return response()->json([
             'user' => PostPresenter::userSummary($user),
-            'data' => $messages,
+            'messagingBlocked' => UserBlock::between($viewer->id, $user->id),
+            'blockedByMe' => UserBlock::where('blocker_id', $viewer->id)->where('blocked_id', $user->id)->exists(),
+            'data' => $messages->map(fn ($m) => $this->present($m, $viewer->id)),
         ]);
     }
 
     public function send(Request $request, User $user): JsonResponse
     {
-        $this->ensureFriends($request->user(), $user);
+        $viewer = $request->user();
+        abort_if($viewer->is($user) || ! $user->is_active, 404);
+        abort_if(UserBlock::between($viewer->id, $user->id), 403, 'Messaging is unavailable between these accounts.');
         $data = $request->validate(['body' => ['required', 'string', 'min:1', 'max:2000']]);
-
-        $message = DirectMessage::create([
-            'sender_id' => $request->user()->id,
-            'recipient_id' => $user->id,
-            'body' => $data['body'],
-        ]);
-        $message->load('sender:id,name,username,avatar_path');
-
-        return response()->json([
-            'message' => [
-                'id' => $message->id,
-                'body' => $message->body,
-                'createdAt' => $message->created_at->diffForHumans(),
-                'sentByMe' => true,
-                'sender' => PostPresenter::userSummary($message->sender),
-            ],
-        ], 201);
+        $body = trim($data['body']);
+        abort_if($body === '', 422, 'Enter a message.');
+        ContentModeration::check($body);
+        $message = DirectMessage::create(['sender_id' => $viewer->id, 'recipient_id' => $user->id, 'body' => $body]);
+        return response()->json(['message' => $this->present($message->load('sender'), $viewer->id)], 201);
     }
 
-    private function ensureFriends(User $first, User $second): void
+    private function present(DirectMessage $message, int $viewer): array
     {
-        abort_if($first->id === $second->id || ! $second->is_active, 404);
-        $areFriends = FriendRequest::query()
-            ->where('status', 'accepted')
-            ->where(fn ($query) => $query
-                ->where(fn ($pair) => $pair->where('sender_id', $first->id)->where('recipient_id', $second->id))
-                ->orWhere(fn ($pair) => $pair->where('sender_id', $second->id)->where('recipient_id', $first->id)))
-            ->exists();
-
-        abort_unless($areFriends, 403, 'Send and accept a friend request before messaging.');
+        return ['id' => $message->id, 'body' => $message->body, 'createdAt' => $message->created_at->diffForHumans(),
+            'sentByMe' => (int) $message->sender_id === $viewer, 'sender' => PostPresenter::userSummary($message->sender)];
     }
 }
