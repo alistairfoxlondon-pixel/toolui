@@ -27,6 +27,7 @@ class DemoAccountsSeeder extends Seeder
                 'skills' => ['Prototyping', 'AI tools', 'Product design'],
                 'website' => 'https://example.com',
                 'avatar_choice' => 'female-violet',
+                'cover_choice' => 'blossom',
                 'password' => 'VibeDockDemo2026!',
                 'is_active' => true,
             ],
@@ -42,6 +43,7 @@ class DemoAccountsSeeder extends Seeder
                 'profession' => 'Community moderator',
                 'skills' => ['Community building'],
                 'avatar_choice' => 'male-indigo',
+                'cover_choice' => 'ocean',
                 'password' => 'VibeDockAdmin2026!',
                 'is_active' => true,
             ],
@@ -65,6 +67,7 @@ class DemoAccountsSeeder extends Seeder
                 'category' => 'First launch',
                 'launch_category' => 'ai_tool',
                 'project_url' => 'https://example.com',
+                'is_featured' => true,
             ],
         );
 
@@ -75,6 +78,30 @@ class DemoAccountsSeeder extends Seeder
                 'body' => 'A quick check in for makers.',
                 'options' => ['Choosing what to build', 'Finding early users', 'Finishing the first version'],
                 'category' => 'First launch',
+            ],
+        );
+
+        Post::firstOrCreate(
+            ['user_id' => $member->id, 'title' => 'OpenChat 70B is free to self-host'],
+            [
+                'type' => 'model',
+                'body' => 'Open weights with a permissive license. Runs on a single GPU and works well for local side projects.',
+                'category' => 'AI models',
+                'model_provider' => 'Open community',
+                'model_access' => 'free',
+                'project_url' => 'https://example.com',
+            ],
+        );
+
+        Post::firstOrCreate(
+            ['user_id' => $member->id, 'title' => 'CodePilot Pro adds a free starter tier'],
+            [
+                'type' => 'model',
+                'body' => 'The free tier now includes 50 requests a day, enough to test agents without paying.',
+                'category' => 'AI models',
+                'model_provider' => 'CodePilot',
+                'model_access' => 'freemium',
+                'project_url' => 'https://example.com',
             ],
         );
 

@@ -44,7 +44,7 @@ class PostController extends Controller
             ->withCount(['comments', 'likes', 'reposts']);
 
         $type = $request->query('type');
-        if (in_array($type, ['discussion', 'question', 'poll', 'launch', 'repost'], true)) {
+        if (in_array($type, ['discussion', 'question', 'poll', 'launch', 'model', 'repost'], true)) {
             $query->where('type', $type);
         }
 
@@ -60,15 +60,19 @@ class PostController extends Controller
         $type = $request->input('type');
 
         $data = $request->validate([
-            'type' => ['required', 'in:discussion,question,poll,launch'],
-            'title' => in_array($type, ['question', 'poll', 'launch'], true)
+            'type' => ['required', 'in:discussion,question,poll,launch,model'],
+            'title' => in_array($type, ['question', 'poll', 'launch', 'model'], true)
                 ? ['required', 'string', 'max:140']
                 : ['nullable', 'string', 'max:140'],
-            'body' => in_array($type, ['discussion', 'question', 'launch'], true)
+            'body' => in_array($type, ['discussion', 'question', 'launch', 'model'], true)
                 ? ['required', 'string', 'max:5000']
                 : ['nullable', 'string', 'max:5000'],
             'category' => ['nullable', 'string', 'max:48'],
             'launch_category' => ['nullable', 'in:ai_tool,ai_app,app,website,other'],
+            'model_provider' => $type === 'model' ? ['nullable', 'string', 'max:60'] : ['prohibited'],
+            'model_access' => $type === 'model'
+                ? ['nullable', 'in:free,freemium,paid']
+                : ['prohibited'],
             'project_url' => $type === 'launch'
                 ? ['required', 'url', 'max:2048']
                 : ['nullable', 'url', 'max:2048'],
@@ -97,9 +101,11 @@ class PostController extends Controller
             'type' => $data['type'],
             'title' => $data['title'] ?? null,
             'body' => $data['body'] ?? null,
-            'category' => $data['category'] ?? null,
+            'category' => $data['type'] === 'model' ? ($data['category'] ?? 'AI models') : ($data['category'] ?? null),
             'launch_category' => $data['type'] === 'launch' ? ($data['launch_category'] ?? 'other') : null,
-            'project_url' => $data['type'] === 'launch' ? ($data['project_url'] ?? null) : null,
+            'model_provider' => $data['type'] === 'model' ? ($data['model_provider'] ?? null) : null,
+            'model_access' => $data['type'] === 'model' ? ($data['model_access'] ?? 'free') : null,
+            'project_url' => in_array($data['type'], ['launch', 'model'], true) ? ($data['project_url'] ?? null) : null,
             'image_path' => $imagePath,
             'logo_path' => $logoPath,
             'options' => $data['type'] === 'poll' ? array_values($data['options']) : null,

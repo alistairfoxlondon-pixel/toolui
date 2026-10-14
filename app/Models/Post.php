@@ -16,12 +16,15 @@ class Post extends Model
         'body',
         'category',
         'launch_category',
+        'model_provider',
+        'model_access',
         'project_url',
         'image_path',
         'logo_path',
         'source_post_id',
         'options',
         'is_hidden',
+        'is_featured',
     ];
 
     protected function casts(): array
@@ -29,6 +32,7 @@ class Post extends Model
         return [
             'options' => 'array',
             'is_hidden' => 'boolean',
+            'is_featured' => 'boolean',
         ];
     }
 

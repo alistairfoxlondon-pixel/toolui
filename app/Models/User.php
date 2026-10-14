@@ -24,6 +24,7 @@ class User extends Authenticatable
         'website',
         'avatar_path',
         'avatar_choice',
+        'cover_choice',
         'password',
     ];
 

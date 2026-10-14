@@ -1,8 +1,8 @@
 # VibeDock
 
-VibeDock is a Laravel community for people who make AI tools, apps, and creative projects. Members can publish discussions, questions, polls, and launches; upload post images and project logos; vote on launches; build professional profiles; follow and friend other makers; send private messages; and join a shared community chat. Administrators can review reports, manage accounts and posts, and remove group chat messages.
+VibeDock is a Laravel community for people who make AI tools, apps, and creative projects. Members can publish discussions, questions, polls, launches, and AI model shares (with free, freemium, or paid access tags); upload post images and project logos; vote on launches; build professional profiles with library avatars and predefined cover designs; follow and friend other makers; send private messages; and join a shared community chat. Administrators can review reports, feature or hide posts, manage accounts, posts, and comments, and remove group chat messages.
 
-The information architecture and content are original. The linked repository informed visual qualities only. The interface uses a mobile first layout, solid color surfaces, smaller corner radii, accessible controls, and responsive navigation.
+The information architecture and content are original. The linked repository informed visual qualities only. The interface uses a mobile first layout, solid color surfaces, accessible controls, Material Symbols icons, and responsive navigation.
 
 ## Stack
 

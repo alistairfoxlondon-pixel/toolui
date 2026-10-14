@@ -3,22 +3,145 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\User;
+use App\Support\Seo;
+use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class HomeController extends Controller
 {
-    public function __invoke(): View
+    public function home(): View
     {
-        return view('welcome');
+        return view('welcome', ['meta' => Seo::home()]);
+    }
+
+    public function models(): View
+    {
+        return $this->staticPage('models');
+    }
+
+    public function launches(): View
+    {
+        return $this->staticPage('launches');
+    }
+
+    public function rankings(): View
+    {
+        return $this->staticPage('rankings');
+    }
+
+    public function communityChat(): View
+    {
+        return $this->staticPage('community-chat');
+    }
+
+    public function messages(): View
+    {
+        return $this->staticPage('messages');
+    }
+
+    public function about(): View
+    {
+        return $this->staticPage('about');
+    }
+
+    public function guidelines(): View
+    {
+        return $this->staticPage('guidelines');
+    }
+
+    public function privacy(): View
+    {
+        return $this->staticPage('privacy');
+    }
+
+    public function terms(): View
+    {
+        return $this->staticPage('terms');
+    }
+
+    public function login(): View
+    {
+        return view('welcome', ['meta' => Seo::page('login')]);
+    }
+
+    public function register(): View
+    {
+        return view('welcome', ['meta' => Seo::page('register')]);
     }
 
     public function profile(string $username): View
     {
-        return view('welcome', ['profileUsername' => $username]);
+        $profile = User::query()->where('username', $username)->where('is_active', true)->first();
+
+        return view('welcome', [
+            'profileUsername' => $username,
+            'meta' => $profile
+                ? [
+                    'title' => $profile->name.' (@'.$profile->username.') | VibeDock',
+                    'description' => $profile->bio ?: 'Posts, launches, and AI model shares by '.$profile->name.' on VibeDock.',
+                    'path' => '/u/'.$profile->username,
+                ]
+                : Seo::home(),
+        ]);
     }
 
     public function post(Post $post): View
     {
-        return view('welcome', ['initialPostId' => (string) $post->id]);
+        abort_if($post->is_hidden || ! $post->author?->is_active, 404);
+        $title = $post->title ?: Str::limit($post->body, 60);
+
+        return view('welcome', [
+            'initialPostId' => (string) $post->id,
+            'meta' => [
+                'title' => $title.' | VibeDock',
+                'description' => $post->body ? Str::limit($post->body, 155) : 'A community post on VibeDock.',
+                'path' => '/posts/'.$post->id,
+            ],
+        ]);
+    }
+
+    public function sitemap(): Response
+    {
+        $urls = [
+            url('/'),
+            url('/models'),
+            url('/launches'),
+            url('/rankings'),
+            url('/community-chat'),
+            url('/about'),
+            url('/guidelines'),
+            url('/privacy'),
+            url('/terms'),
+        ];
+
+        Post::query()
+            ->where('is_hidden', false)
+            ->whereHas('author', fn ($author) => $author->where('is_active', true))
+            ->latest()
+            ->limit(500)
+            ->pluck('id')
+            ->each(fn (int $id) => $urls[] = url("/posts/{$id}"));
+
+        User::query()
+            ->where('is_active', true)
+            ->latest()
+            ->limit(500)
+            ->pluck('username')
+            ->each(fn (string $username) => $urls[] = url('/u/'.rawurlencode($username)));
+
+        $body = '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+        foreach ($urls as $link) {
+            $body .= '  <url><loc>'.htmlspecialchars($link, ENT_XML1).'</loc></url>'."\n";
+        }
+        $body .= '</urlset>';
+
+        return response($body, 200)->header('Content-Type', 'application/xml; charset=UTF-8');
+    }
+
+    private function staticPage(string $page): View
+    {
+        return view('welcome', ['meta' => Seo::page($page), 'initialPage' => $page]);
     }
 }

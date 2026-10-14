@@ -9,9 +9,17 @@ final class AvatarLibrary
         'female-rose' => 'Woman in rose',
         'female-violet' => 'Woman in violet',
         'female-teal' => 'Woman in teal',
+        'female-sun' => 'Woman with blonde bun',
+        'female-forest' => 'Woman with curly hair',
+        'female-ocean' => 'Woman in navy',
+        'female-dusk' => 'Woman with silver bob',
         'male-indigo' => 'Man in indigo',
-        'male-sky' => 'Man in sky',
+        'male-sky' => 'Man in sky blue',
         'male-amber' => 'Man in amber',
+        'male-forest' => 'Man in forest green',
+        'male-ruby' => 'Man in ruby',
+        'male-slate' => 'Man in slate',
+        'male-wine' => 'Man in wine',
     ];
 
     public static function url(?string $choice): string
