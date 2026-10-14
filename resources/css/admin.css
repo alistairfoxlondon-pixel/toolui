@@ -171,3 +171,12 @@ body.admin-page {
 .model-admin-form .wide { grid-column: 1 / -1; }
 .model-admin-form button { align-self: end; min-height: 44px; }
 @media (max-width: 600px) { .model-admin-form { grid-template-columns: minmax(0, 1fr); } }
+
+/* Badge and brand-review controls share the existing admin visual language. */
+.admin-recognition-control { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; padding: 8px 0; }
+.admin-recognition-control label { display: grid; gap: 5px; font-size: 11px; color: var(--admin-muted); }
+.admin-recognition-control select { min-height: 38px; max-width: 220px; border: 1px solid var(--admin-border); border-radius: 8px; padding: 8px; background: #fff; color: var(--admin-ink); font: inherit; }
+.admin-recognition-control select:focus-visible { outline: 2px solid var(--admin-primary); outline-offset: 2px; }
+.admin-row-actions .admin-recognition-control { flex-basis: 100%; border-bottom: 1px solid var(--admin-border); margin-bottom: 6px; }
+#brands .admin-report-main small, #brands .admin-report-main a { display: block; margin-top: 8px; font-size: 12px; }
+#brands .admin-report-main a { color: var(--admin-primary); text-decoration: underline; text-underline-offset: 3px; }

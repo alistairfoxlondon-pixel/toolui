@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\AdminController;
-use App\Http\Controllers\AiModelController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommunityChatController;
 use App\Http\Controllers\HomeController;
@@ -16,7 +15,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'home'])->name('home');
 Route::get('/feed', [HomeController::class, 'feed'])->name('feed.page');
 Route::get('/settings/profile', [HomeController::class, 'editProfile'])->middleware(['auth', 'active'])->name('profile.edit');
-Route::get('/models', [HomeController::class, 'models'])->name('models.page');
+Route::redirect('/models', '/polls', 301);
+Route::get('/polls', [HomeController::class, 'polls'])->name('polls.page');
+Route::get('/badges', [HomeController::class, 'badges'])->name('badges.page');
+Route::get('/help', [HomeController::class, 'help'])->name('help.page');
+Route::get('/create/{type}', [HomeController::class, 'create'])->whereIn('type', ['post', 'question', 'poll', 'launch'])->name('create.page');
+Route::get('/brands/{slug}', [HomeController::class, 'brand'])->name('brands.show');
 Route::get('/launches', [HomeController::class, 'launches'])->name('launches.page');
 Route::get('/rankings', [HomeController::class, 'rankings'])->name('rankings.page');
 Route::get('/community-chat', [HomeController::class, 'communityChat'])->name('community-chat.page');
@@ -46,7 +50,6 @@ Route::middleware(['guest', 'throttle:12,1'])->prefix('auth')->name('social.')->
         ->name('callback');
 });
 
-Route::get('/api/models', [AiModelController::class, 'index'])->name('api.models');
 Route::get('/api/posts/{post}', [PostController::class, 'show'])->name('api.posts.show');
 Route::get('/api/feed', [PostController::class, 'index'])->name('api.feed');
 Route::get('/api/search', [ProfileController::class, 'search'])->name('api.search');
@@ -54,7 +57,6 @@ Route::get('/api/users/{username}', [ProfileController::class, 'show'])->name('a
 Route::get('/api/rankings', [RankingController::class, 'index'])->name('api.rankings');
 
 Route::middleware(['auth', 'active', 'throttle:120,1'])->group(function () {
-    Route::put('/api/models/{model}/rating', [AiModelController::class, 'rate'])->middleware('throttle:model-rating')->name('api.models.rate');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::put('/api/profile', [ProfileController::class, 'update'])->name('api.profile.update');
     Route::get('/api/friend-requests', [ProfileController::class, 'friendRequests'])->name('api.friend-requests.index');
@@ -86,8 +88,8 @@ Route::middleware(['auth', 'active', 'throttle:120,1'])->group(function () {
 });
 
 Route::middleware(['auth', 'active', 'admin', 'throttle:60,1'])->prefix('admin')->name('admin.')->group(function () {
-    Route::post('/models', [AiModelController::class, 'store'])->name('models.store');
-    Route::put('/models/{model}', [AiModelController::class, 'update'])->name('models.update');
+    Route::patch('/users/{user}/badge', [AdminController::class, 'setBadge'])->name('users.badge');
+    Route::patch('/brands/{brand}', [AdminController::class, 'reviewBrand'])->name('brands.review');
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
     Route::patch('/posts/{post}/visibility', [AdminController::class, 'setPostVisibility'])->name('posts.visibility');
     Route::patch('/posts/{post}/featured', [AdminController::class, 'setPostFeatured'])->name('posts.featured');

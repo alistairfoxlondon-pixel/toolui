@@ -61,7 +61,7 @@ check('hero image renders with illustration', Boolean($('.hero-image')) && /make
 check('four visual feature cards render', $$('.feature-card').length === 4);
 check('hero image has responsive source and priority', $('.hero-image').hasAttribute('srcset') && $('.hero-image').getAttribute('fetchpriority') === 'high');
 check('hero welcomes signed-out members', /Join the community/.test($('.hero-actions').textContent));
-check('landing contains three visual feature scenes', $$('.scene-image img').length === 3);
+check('landing contains two illustration scenes and badge artwork', $$('.scene-image img').length === 2 && $$('.display-badge').length === 3);
 check('landing explains the maker journey', Boolean($('.landing-journey')));
 check('hero stays under 30 words', $('.hero').textContent.trim().split(/\s+/).length <= 30);
 check('utility icons render (Material Symbols paths)', $$('svg.icon path').length > 10);
@@ -99,12 +99,11 @@ check('discussion tab announces selection', $('.feed-tab[data-filter="discussion
 check('discussion tab filters the feed', $$('.post-card').length > 0 && Boolean($('.feed-tab[data-filter="discussion"].is-active')));
 click($('.feed-tab[data-filter="all"]'));
 await flush();
-click($('[data-action="go-page"][data-page="models"]'));
+click($('[data-action="go-page"][data-page="polls"]'));
 await flush();
-check('models page renders catalogue cards', $$('.catalogue-card').length >= 1);
-check('models offer member ratings', $$('.rating-star').length >= 5);
-check('unrated models show no invented ratings', /Not rated/.test($('.catalogue-grid').textContent));
-check('title updated for models', /model/i.test(document.title));
+check('polls page shows community votes', Boolean($('.poll-panel')));
+check('catalogue navigation removed', !$('[data-page="models"]'));
+check('title updated for polls', /poll/i.test(document.title));
 
 click($('[data-action="go-page"][data-page="launches"]'));
 await flush();
@@ -144,18 +143,6 @@ if (loginForm) {
 }
 check('demo login accepted', Boolean($('.user-pill, [data-action="logout"]')));
 
-console.log('member model ratings');
-click($('[data-action="go-page"][data-page="models"]'));
-await flush();
-const modelId = $('.rating-star').dataset.modelId;
-click($(`.rating-star[data-model-id="${modelId}"][data-score="5"]`));
-await flush();
-check('member can rate a catalogue model', $(`.rating-star[data-model-id="${modelId}"][data-score="5"]`).getAttribute('aria-pressed') === 'true');
-click($(`.rating-star[data-model-id="${modelId}"][data-score="3"]`));
-await flush();
-check('rating edits do not add duplicate votes', $(`.rating-star[data-model-id="${modelId}"]`).closest('article').querySelector('.model-score').textContent.includes('1 rating'));
-check('rating change persists', Object.values(JSON.parse(window.localStorage.getItem('vibedock-preview-model-ratings')))[0][modelId] === 3);
-
 console.log('feed interactions');
 click($('[data-action="go-page"][data-page="home"]'));
 await flush();
@@ -177,15 +164,19 @@ const likeButton = $('.post-action[data-action="like"]');
 if (likeButton) click(likeButton);
 await flush();
 check('like handled without error', errors.length === 0);
-const reactionPicker = $('.reaction-picker');
-reactionPicker.open = true;
-click(reactionPicker.querySelector('[data-reaction="celebrate"]'));
+const reactionBar = $('.post-reactions');
+check('every post exposes six image reactions', $$('.post-card').every(card=>card.querySelectorAll('.post-reactions button').length===6));
+check('reaction choices are not hidden in a popup', !$('.reaction-picker'));
+click(reactionBar.querySelector('[data-reaction="celebrate"]'));
 await flush();
-check('reaction picker preserves reactions', Boolean($('.reaction-action[data-reaction="celebrate"].is-selected')));
-const openPicker = $('.reaction-picker');
-openPicker.open = true;
-document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-check('Escape closes reactions and restores focus', !openPicker.open && document.activeElement === openPicker.querySelector('summary'));
+check('visible reaction selects', Boolean($('.reaction-action[data-reaction="celebrate"].is-selected')));
+click($('.reaction-action[data-reaction="laugh"]'));
+await flush();
+check('Haha replaces previous reaction', Boolean($('.reaction-action[data-reaction="laugh"].is-selected')) && !$('.reaction-action[data-reaction="celebrate"].is-selected'));
+click($('.reaction-action[data-reaction="laugh"]'));
+await flush();
+check('click again removes reaction', !$('.reaction-action[data-reaction="laugh"].is-selected'));
+
 
 
 console.log('stable feed updates');
@@ -274,24 +265,18 @@ click($('.thread-block'));
 await flush();
 check('unblocking re-enables private composer', !$('form[data-form="message"] textarea').disabled);
 
-console.log('compose modal');
+console.log('dedicated launch page');
 click($('[data-action="go-page"][data-page="home"]'));
 await flush();
-click($('.composer-prompt[data-action="open-compose"]') || $('[data-action="open-compose"]'));
+click($('[data-action="open-compose"][data-type="launch"]'));
 await flush();
-check('compose modal opens', Boolean($('.compose-dialog')));
-const typeSwitches = $$('.compose-type-switch button, .compose-type-option');
-check('compose has four member post types', typeSwitches.length === 4);
-check('members cannot compose models', !typeSwitches.some(b => /model/i.test(b.textContent)));
-const launchSwitch = typeSwitches.find((b) => /launch/i.test(b.textContent));
-if (launchSwitch) click(launchSwitch);
-await flush();
-check('launch compose has project url field', Boolean($('input[name="project_url"]')));
+check('launch opens its own page', window.location.pathname === '/create/launch' && Boolean($('.launch-studio')));
+check('no mixed-type popup', !$('.compose-dialog') && !$('.compose-type-switch'));
+check('launch has project URL', Boolean($('input[name="project_url"]')));
 check('launch has SEO description', Boolean($('[name="seo_description"]')));
-const closeButtons = $$('[data-action="close-modal"]');
-if (closeButtons.length) click(closeButtons[closeButtons.length - 1]);
-await flush();
-check('compose modal closes', !$('.compose-dialog'));
+check('launch has brand claim and consent', Boolean($('[name="brand_slug"]')) && Boolean($('[name="brand_authorized"]')));
+type($('[name="title"]'), 'A new launch');
+check('launch preview updates live', $('[data-launch-title]').textContent === 'A new launch');
 
 console.log('profile + pickers');
 click($('[data-action="open-my-profile"]'));
@@ -309,9 +294,9 @@ check('skills start compact without a scrollbox', $$('.skill-option:not([hidden]
 click($('[data-action="expand-skills"]'));
 check('all skills can be expanded', $$('.skill-option:not([hidden])').length === 80);
 click($('[data-action="expand-skills"]'));
-check('avatar cast starts compact', $$('.avatar-choice:not([hidden])').length < 10);
+check('avatar cast starts compact', $$('[data-avatar-group]:not([hidden]) .avatar-choice:not([hidden])').length < 10);
 click($('[data-action="expand-avatars"]'));
-check('all 24 original characters can be expanded', $$('.avatar-choice:not([hidden])').length === 24);
+check('all 12 licensed 3D characters can be expanded', $$('[data-avatar-group]:not([hidden]) .avatar-choice:not([hidden])').length === 12);
 click($('.skill-option[data-skill="React"]'));
 check('skill selection updates profile field', /React/.test($('input[name="skills"]').value) && $('.skill-option[data-skill="React"]').getAttribute('aria-pressed') === 'true');
 type($('[data-skill-search]'), 'Python');
@@ -321,7 +306,11 @@ check('skill search has helpful empty state', !$('.skill-empty').hidden);
 type($('[data-skill-search]'), '');
 check('cover picker lists 8 choices', $$('.cover-choice').length === 8);
 check('cover swatch classes emitted', $$('.cover-swatch-sunset, .cover-swatch-grape, .cover-swatch-ocean').length >= 3);
-check('avatar picker lists 15+ choices', $$('.avatar-choice').length >= 15);
+check('avatar picker has 24 choices in separate groups', $$('.avatar-choice').length === 24 && $$('[data-avatar-group]').length === 3);
+click($('[data-action="avatar-group"][data-group="Female"]'));
+check('female group contains six portraits', $$('[data-avatar-group="Female"] img').length === 6 && $('[data-avatar-group="Male"]').hidden);
+click($('[data-action="avatar-group"][data-group="Male"]'));
+check('male group contains six portraits', $$('[data-avatar-group="Male"] img').length === 6 && $('[data-avatar-group="Female"]').hidden);
 check('avatar picker offers random', /random/i.test($('.profile-edit-page').textContent));
 const coverChoice = $$('.cover-choice')[2];
 if (coverChoice) {

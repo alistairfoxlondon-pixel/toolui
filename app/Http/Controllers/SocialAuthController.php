@@ -94,7 +94,7 @@ class SocialAuthController extends Controller
                         'email' => $email,
                         'email_verified_at' => now(),
                         'password' => Str::random(64),
-                        'avatar_choice' => 'neutral',
+                        'avatar_choice' => 'fluent-robot',
                     ]);
                 }
                 SocialAccount::create([

@@ -1,122 +1,122 @@
 [
   {
-    "key": "orbit-ollie",
-    "label": "Orbit Ollie",
-    "group": "The cast"
+    "key": "fluent-man-classic",
+    "label": "Classic",
+    "group": "Male"
   },
   {
-    "key": "captain-commit",
-    "label": "Captain Commit",
-    "group": "The cast"
+    "key": "fluent-man-curly",
+    "label": "Curly",
+    "group": "Male"
   },
   {
-    "key": "byte-bard",
-    "label": "Byte Bard",
-    "group": "The cast"
+    "key": "fluent-man-copper",
+    "label": "Copper",
+    "group": "Male"
   },
   {
-    "key": "agent-loop",
-    "label": "Agent Loop",
-    "group": "The cast"
+    "key": "fluent-man-coder",
+    "label": "Coder",
+    "group": "Male"
   },
   {
-    "key": "professor-patch",
-    "label": "Professor Patch",
-    "group": "The cast"
+    "key": "fluent-man-artist",
+    "label": "Artist",
+    "group": "Male"
   },
   {
-    "key": "noodle-ninja",
-    "label": "Noodle Ninja",
-    "group": "The cast"
+    "key": "fluent-man-explorer",
+    "label": "Explorer",
+    "group": "Male"
   },
   {
-    "key": "nova-nomad",
-    "label": "Nova Nomad",
-    "group": "The cast"
+    "key": "fluent-woman-classic",
+    "label": "Classic",
+    "group": "Female"
   },
   {
-    "key": "pixel-fox",
-    "label": "Pixel Fox",
-    "group": "The cast"
+    "key": "fluent-woman-curly",
+    "label": "Curly",
+    "group": "Female"
   },
   {
-    "key": "dino-debug",
-    "label": "Dino Debug",
-    "group": "The cast"
+    "key": "fluent-woman-copper",
+    "label": "Copper",
+    "group": "Female"
   },
   {
-    "key": "sir-ships",
-    "label": "Sir Ships-a-lot",
-    "group": "The cast"
+    "key": "fluent-woman-coder",
+    "label": "Coder",
+    "group": "Female"
   },
   {
-    "key": "bean-bandit",
-    "label": "Bean Bandit",
-    "group": "The cast"
+    "key": "fluent-woman-artist",
+    "label": "Artist",
+    "group": "Female"
   },
   {
-    "key": "bug-buddy",
-    "label": "Bug Buddy",
-    "group": "The cast"
+    "key": "fluent-woman-explorer",
+    "label": "Explorer",
+    "group": "Female"
   },
   {
-    "key": "robo-ravi",
-    "label": "Robo Ravi",
-    "group": "The cast"
+    "key": "fluent-robot",
+    "label": "Robot",
+    "group": "Characters"
   },
   {
-    "key": "disco-duck",
-    "label": "Disco Duck",
-    "group": "The cast"
+    "key": "fluent-astronaut",
+    "label": "Astronaut",
+    "group": "Characters"
   },
   {
-    "key": "cloud-kid",
-    "label": "Cloud Kid",
-    "group": "The cast"
+    "key": "fluent-ninja",
+    "label": "Ninja",
+    "group": "Characters"
   },
   {
-    "key": "spook-exe",
-    "label": "Spook.exe",
-    "group": "The cast"
+    "key": "fluent-fox",
+    "label": "Fox",
+    "group": "Characters"
   },
   {
-    "key": "midnight-moth",
-    "label": "Midnight Moth",
-    "group": "The cast"
+    "key": "fluent-cat-face",
+    "label": "Cat face",
+    "group": "Characters"
   },
   {
-    "key": "ramen-ronin",
-    "label": "Ramen Ronin",
-    "group": "The cast"
+    "key": "fluent-unicorn",
+    "label": "Unicorn",
+    "group": "Characters"
   },
   {
-    "key": "cosmic-cat",
-    "label": "Cosmic Cat",
-    "group": "The cast"
+    "key": "fluent-alien",
+    "label": "Alien",
+    "group": "Characters"
   },
   {
-    "key": "moss-mage",
-    "label": "Moss Mage",
-    "group": "The cast"
+    "key": "fluent-ghost",
+    "label": "Ghost",
+    "group": "Characters"
   },
   {
-    "key": "sheriff-syntax",
-    "label": "Sheriff Syntax",
-    "group": "The cast"
+    "key": "fluent-dragon-face",
+    "label": "Dragon face",
+    "group": "Characters"
   },
   {
-    "key": "neon-gecko",
-    "label": "Neon Gecko",
-    "group": "The cast"
+    "key": "fluent-panda",
+    "label": "Panda",
+    "group": "Characters"
   },
   {
-    "key": "count-cache",
-    "label": "Count Cache",
-    "group": "The cast"
+    "key": "fluent-owl",
+    "label": "Owl",
+    "group": "Characters"
   },
   {
-    "key": "toast-rider",
-    "label": "Toast Rider",
-    "group": "The cast"
+    "key": "fluent-octopus",
+    "label": "Octopus",
+    "group": "Characters"
   }
 ]

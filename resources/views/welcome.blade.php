@@ -26,7 +26,7 @@
     @endphp
     <title>{{ $meta['title'] }}</title>
     <meta name="description" content="{{ $meta['description'] }}">
-    @if (in_array($initialPage, ['profile-edit', 'messages', 'admin']) || request()->is('login', 'register'))
+    @if (in_array($initialPage, ['profile-edit', 'messages', 'admin']) || request()->is('login', 'register', 'create/*'))
         <meta name="robots" content="noindex, nofollow">
     @endif
     <link rel="canonical" href="{{ $canonical }}">
@@ -75,7 +75,7 @@
                 'avatarChoice' => auth()->user()->avatar_choice,
                 'coverChoice' => \App\Support\CoverLibrary::valid(auth()->user()->cover_choice),
                 'avatarUploaded' => (bool) auth()->user()->avatar_path,
-                'avatarUrl' => auth()->user()->avatar_path ? Storage::disk('public')->url(auth()->user()->avatar_path) : asset('avatars/'.(auth()->user()->avatar_choice ?: 'neutral').'.svg'),
+                'avatarUrl' => auth()->user()->avatar_path ? Storage::disk('public')->url(auth()->user()->avatar_path) : \App\Support\AvatarLibrary::url(auth()->user()->avatar_choice),
                 'isAdmin' => (bool) auth()->user()->is_admin,
             ] : null),
             initialPage: @json($initialPage),

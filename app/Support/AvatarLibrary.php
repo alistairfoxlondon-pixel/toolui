@@ -5,6 +5,32 @@ namespace App\Support;
 final class AvatarLibrary
 {
     public const CHOICES = [
+        'fluent-man-classic' => 'Male — Classic',
+        'fluent-man-curly' => 'Male — Curly',
+        'fluent-man-copper' => 'Male — Copper',
+        'fluent-man-coder' => 'Male — Coder',
+        'fluent-man-artist' => 'Male — Artist',
+        'fluent-man-explorer' => 'Male — Explorer',
+        'fluent-woman-classic' => 'Female — Classic',
+        'fluent-woman-curly' => 'Female — Curly',
+        'fluent-woman-copper' => 'Female — Copper',
+        'fluent-woman-coder' => 'Female — Coder',
+        'fluent-woman-artist' => 'Female — Artist',
+        'fluent-woman-explorer' => 'Female — Explorer',
+
+        'fluent-robot' => 'Robot',
+        'fluent-astronaut' => 'Astronaut',
+        'fluent-ninja' => 'Ninja',
+        'fluent-fox' => 'Fox',
+        'fluent-cat-face' => 'Cat face',
+        'fluent-unicorn' => 'Unicorn',
+        'fluent-alien' => 'Alien',
+        'fluent-ghost' => 'Ghost',
+        'fluent-dragon-face' => 'Dragon face',
+        'fluent-panda' => 'Panda',
+        'fluent-owl' => 'Owl',
+        'fluent-octopus' => 'Octopus',
+
         'orbit-ollie' => 'Orbit Ollie',
         'captain-commit' => 'Captain Commit',
         'byte-bard' => 'Byte Bard',
@@ -48,8 +74,16 @@ final class AvatarLibrary
 
     public static function url(?string $choice): string
     {
-        $key = array_key_exists((string) $choice, self::CHOICES) ? $choice : 'neutral';
+        $key = array_key_exists((string) $choice, self::CHOICES) ? $choice : 'fluent-robot';
 
-        return asset('avatars/'.$key.'.svg');
+        // Retire old artwork without invalidating saved profile choices.
+        static $aliases;
+        $aliases ??= json_decode(file_get_contents(resource_path('data/avatar-aliases.json')), true, flags: JSON_THROW_ON_ERROR);
+        $key = $aliases[$key] ?? $key;
+
+        static $assets;
+        $assets ??= json_decode(file_get_contents(resource_path('data/avatar-assets.json')), true, flags: JSON_THROW_ON_ERROR);
+
+        return asset(ltrim(($assets[$key] ?? $assets['fluent-robot'])['small'], '/'));
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Comment;
-use App\Models\AiModel;
 use App\Models\MessageReport;
 use App\Models\DirectMessage;
 use Illuminate\Support\Facades\DB;
@@ -25,8 +24,7 @@ class AdminController extends Controller
             'activeMemberCount' => User::where('is_active', true)->count(),
             'postCount' => Post::count(),
             'launchCount' => Post::where('type', 'launch')->count(),
-            'modelCount' => AiModel::count(),
-            'aiModels' => AiModel::withCount('ratings')->orderBy('name')->get(),
+            'brands' => \App\Models\Brand::with(['owner', 'post'])->latest()->limit(100)->get(),
             'commentCount' => Comment::count(),
             'openReportCount' => PostReport::where('status', 'open')->count() + MessageReport::where('status', 'open')->count(),
             'messageReports' => MessageReport::with(['reporter', 'reportedUser'])->where('status', 'open')->latest()->limit(50)->get(),
@@ -40,13 +38,37 @@ class AdminController extends Controller
                 ->latest()
                 ->limit(30)
                 ->get(),
-            'users' => User::latest()->limit(40)->get(),
+            'users' => User::with('memberBadges')->latest()->limit(40)->get(),
             'posts' => Post::with('author')->latest()->limit(30)->get(),
             'comments' => Comment::with(['author:id,name,username', 'post:id,title,body,is_hidden'])
                 ->latest()
                 ->limit(30)
                 ->get(),
         ]);
+    }
+
+    public function setBadge(Request $request, User $user): RedirectResponse
+    {
+        $data = $request->validate([
+            'badge' => ['required', \Illuminate\Validation\Rule::in(array_keys(\App\Support\BadgeLibrary::ADMIN))],
+            'action' => ['required', 'in:award,revoke'],
+        ]);
+        if ($data['action'] === 'award') {
+            $user->memberBadges()->firstOrCreate(['badge' => $data['badge']], ['awarded_by' => $request->user()->id]);
+        } else {
+            $user->memberBadges()->where('badge', $data['badge'])->delete();
+        }
+        return back()->with('status', 'Member badge updated.');
+    }
+
+    public function reviewBrand(Request $request, \App\Models\Brand $brand): RedirectResponse
+    {
+        $data = $request->validate(['status' => ['required', 'in:pending,verified,rejected']]);
+        $brand->status = $data['status'];
+        $brand->reviewed_by = $request->user()->id;
+        $brand->reviewed_at = now();
+        $brand->save();
+        return back()->with('status', 'Brand verification updated.');
     }
 
     public function setPostVisibility(Request $request, Post $post): RedirectResponse

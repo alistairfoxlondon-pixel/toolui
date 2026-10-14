@@ -160,7 +160,7 @@ class ModelSharesTest extends TestCase
         $response = $this->get('/sitemap.xml');
 
         $response->assertOk()->assertHeader('Content-Type', 'application/xml; charset=UTF-8');
-        $this->assertStringContainsString('<loc>'.url('/models').'</loc>', $response->getContent());
+        $this->assertStringContainsString('<loc>'.url('/polls').'</loc>', $response->getContent());
         $this->assertStringNotContainsString('<loc>'.url('/admin').'</loc>', $response->getContent());
     }
 }

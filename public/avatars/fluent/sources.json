@@ -1,0 +1,182 @@
+[
+  {
+    "key": "fluent-man-classic",
+    "label": "Classic",
+    "group": "Male",
+    "source": "assets/Man/Light/3D/man_3d_light.png",
+    "blob": "119a9ff33e565a1138385e3128209a934f810791"
+  },
+  {
+    "key": "fluent-man-curly",
+    "label": "Curly",
+    "group": "Male",
+    "source": "assets/Man curly hair/Dark/3D/man_curly_hair_3d_dark.png",
+    "blob": "fa90a15ce8d6d51ec2e78b58cf15d690601c4232"
+  },
+  {
+    "key": "fluent-man-copper",
+    "label": "Copper",
+    "group": "Male",
+    "source": "assets/Man red hair/Light/3D/man_red_hair_3d_light.png",
+    "blob": "a00e4d726094000f3df5e66393439384dbc970b1"
+  },
+  {
+    "key": "fluent-man-coder",
+    "label": "Coder",
+    "group": "Male",
+    "source": "assets/Man technologist/Medium/3D/man_technologist_3d_medium.png",
+    "blob": "8d507412bcc1b373ba883cdb7eee8a39b41f4da3"
+  },
+  {
+    "key": "fluent-man-artist",
+    "label": "Artist",
+    "group": "Male",
+    "source": "assets/Man artist/Medium-Dark/3D/man_artist_3d_medium-dark.png",
+    "blob": "8ce1aded92e0cd431fdc2c2fe2e5d53edf214069"
+  },
+  {
+    "key": "fluent-man-explorer",
+    "label": "Explorer",
+    "group": "Male",
+    "source": "assets/Man astronaut/Medium-Light/3D/man_astronaut_3d_medium-light.png",
+    "blob": "b41e2abfe8bb9c989075ae85f8f905af08208ef3"
+  },
+  {
+    "key": "fluent-woman-classic",
+    "label": "Classic",
+    "group": "Female",
+    "source": "assets/Woman/Light/3D/woman_3d_light.png",
+    "blob": "ae24d2b4508f00bc9a14bdbbf93fc1a31cfdd180"
+  },
+  {
+    "key": "fluent-woman-curly",
+    "label": "Curly",
+    "group": "Female",
+    "source": "assets/Woman curly hair/Dark/3D/woman_curly_hair_3d_dark.png",
+    "blob": "1f4d82d3fab83b07a07d46a6223276d01dca1edf"
+  },
+  {
+    "key": "fluent-woman-copper",
+    "label": "Copper",
+    "group": "Female",
+    "source": "assets/Woman red hair/Light/3D/woman_red_hair_3d_light.png",
+    "blob": "daf341e3ec7c68e4397b2b1583ee54961cee3836"
+  },
+  {
+    "key": "fluent-woman-coder",
+    "label": "Coder",
+    "group": "Female",
+    "source": "assets/Woman technologist/Medium/3D/woman_technologist_3d_medium.png",
+    "blob": "cf18be0e860883c3ad337eeb77e29db8b5c78c2c"
+  },
+  {
+    "key": "fluent-woman-artist",
+    "label": "Artist",
+    "group": "Female",
+    "source": "assets/Woman artist/Medium-Dark/3D/woman_artist_3d_medium-dark.png",
+    "blob": "02ee0cbc1889e9b326b1087656f5f5a5b6107da4"
+  },
+  {
+    "key": "fluent-woman-explorer",
+    "label": "Explorer",
+    "group": "Female",
+    "source": "assets/Woman astronaut/Medium-Light/3D/woman_astronaut_3d_medium-light.png",
+    "blob": "a685758b773b368d6060a7a3c600b13b08f054d2"
+  },
+  {
+    "key": "love",
+    "source": "assets/Red heart/3D/red_heart_3d.png",
+    "reaction": true,
+    "blob": "6389f0a6c7d4f7d13dbd5c4062d62051b7f76e7a"
+  },
+  {
+    "key": "celebrate",
+    "source": "assets/Party popper/3D/party_popper_3d.png",
+    "reaction": true,
+    "blob": "4ec55237a377b8e53b4190d3edb7b23d7e42fc9f"
+  },
+  {
+    "key": "helpful",
+    "source": "assets/Light bulb/3D/light_bulb_3d.png",
+    "reaction": true,
+    "blob": "3c84732e4d36b9a17068dac61a1f5ec5849f5866"
+  },
+  {
+    "key": "support",
+    "source": "assets/Clapping hands/Default/3D/clapping_hands_3d_default.png",
+    "reaction": true,
+    "blob": "88bc49a7635289b2934b59f004e72123a211423e"
+  },
+  {
+    "key": "laugh",
+    "source": "assets/Face with tears of joy/3D/face_with_tears_of_joy_3d.png",
+    "reaction": true,
+    "blob": "e5c7cd692add6e53602be7ad058a9784211ca22d"
+  },
+  {
+    "key": "wow",
+    "source": "assets/Face with open mouth/3D/face_with_open_mouth_3d.png",
+    "reaction": true,
+    "blob": "c523020f6287754f4d87a0a8bee4a83090cad462"
+  },
+  {
+    "key": "fluent-robot",
+    "source": "assets/Robot/3D/robot_3d.png",
+    "blob": "9ad7dd96f9c6d3ddf950e91068ce56bbd04d639a"
+  },
+  {
+    "key": "fluent-astronaut",
+    "source": "assets/Astronaut/Default/3D/astronaut_3d_default.png",
+    "blob": "bc1616803ed4460251e1e1e3779e1e1ee9a45030"
+  },
+  {
+    "key": "fluent-ninja",
+    "source": "assets/Ninja/Default/3D/ninja_3d_default.png",
+    "blob": "e2ebad7c7fa058f3362411497eb688dd2e5adaab"
+  },
+  {
+    "key": "fluent-fox",
+    "source": "assets/Fox/3D/fox_3d.png",
+    "blob": "485cc5221653484f14506ae359a8e641558d211e"
+  },
+  {
+    "key": "fluent-cat-face",
+    "source": "assets/Cat face/3D/cat_face_3d.png",
+    "blob": "359506526233eef5e59be92cea4a0d4d8885e0e4"
+  },
+  {
+    "key": "fluent-unicorn",
+    "source": "assets/Unicorn/3D/unicorn_3d.png",
+    "blob": "e5b4f1b02a03ea54c38c182001458a6a22f904a1"
+  },
+  {
+    "key": "fluent-alien",
+    "source": "assets/Alien/3D/alien_3d.png",
+    "blob": "49581c2d6709fa23bd1e6ba63aa045c4687f1c8d"
+  },
+  {
+    "key": "fluent-ghost",
+    "source": "assets/Ghost/3D/ghost_3d.png",
+    "blob": "f9c7754d8666a499190cef623c39feb365870556"
+  },
+  {
+    "key": "fluent-dragon-face",
+    "source": "assets/Dragon face/3D/dragon_face_3d.png",
+    "blob": "581af8bc620f6c22b9b7d3b2671e03ee648a61a6"
+  },
+  {
+    "key": "fluent-panda",
+    "source": "assets/Panda/3D/panda_3d.png",
+    "blob": "f17a4262e26af5b195785fb39d40902ff0e5cb71"
+  },
+  {
+    "key": "fluent-owl",
+    "source": "assets/Owl/3D/owl_3d.png",
+    "blob": "3854c819969a25299e5143b30238a1135042e6c3"
+  },
+  {
+    "key": "fluent-octopus",
+    "source": "assets/Octopus/3D/octopus_3d.png",
+    "blob": "2da1a2a64ce87d9fd06b3adda7a0e29c2af07c59"
+  }
+]

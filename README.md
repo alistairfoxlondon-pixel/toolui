@@ -1,6 +1,6 @@
 # VibeDock
 
-VibeDock is a Laravel community for people who make AI tools, apps, and creative projects. Members can publish discussions, questions, polls, and launches with SEO descriptions; upload post images and project logos; vote on launches; build professional profiles with library avatars and predefined cover designs; follow and friend other makers; send private messages; and join a shared community chat. AI models are managed only by administrators in a separate catalogue, with one editable rating per member. Administrators can review reports, feature or hide posts, manage accounts, posts, and comments, and remove group chat messages.
+VibeDock is a Laravel community for people who make AI tools, apps, and creative projects. Members can publish discussions, questions, polls, and launches with SEO descriptions; upload post images and project logos; vote on launches; build professional profiles with library avatars and predefined cover designs; follow and friend other makers; send private messages; and join a shared community chat. Members compare AI models through community polls, earn activity badges, and claim a brand handle for a launch. Administrators can award recognition badges and review brand ownership for a green verified-business tick. Administrators can review reports, feature or hide posts, manage accounts, posts, and comments, and remove group chat messages.
 
 The information architecture and content are original. The linked repository informed visual qualities only. The interface uses a mobile first layout, solid color surfaces, accessible controls, Material Symbols icons, and responsive navigation.
 
@@ -98,7 +98,10 @@ The site does not require a Node server, Redis, or queue workers at runtime. Con
 ## Community pages
 
 - `/` is the visual landing page; `/feed` is the separate community feed.
-- `/models` is the admin-curated AI catalogue with editable member ratings.
+- `/polls` is the dedicated community-poll page. `/models` permanently redirects here; catalogue API/admin routes are retired.
+- `/create/post`, `/create/question`, `/create/poll`, and `/create/launch` are independent creation pages, not a shared modal.
+- `/brands/{slug}` opens the claimed brand’s launch.
+- `/badges` explains activity milestones and admin recognition; `/help` explains the main features.
 - `/settings/profile` is the full-page profile editor.
 - `/launches` is the project showcase with launch votes.
 - `/rankings` lists launches across all categories, including websites and apps, by net votes, plus a rolling engagement leaderboard.
@@ -141,9 +144,9 @@ The primary font stack is `Telenor GP` (genuine local/licensed faces), `Telenor 
 
 To activate appropriately licensed webfonts for every visitor, supply `Telenor-Regular.woff2`, `Telenor-Medium.woff2`, and `Telenor-Bold.woff2` in `public/fonts/telenor/`. Restart preview or rebuild production. The shared Vite plugin detects available files, adds versioned same-origin font URLs and `font-display: swap`, and does not request missing files. Deploy the font directory alongside `public/build`. See `public/fonts/telenor/README.md`. Do not hotlink third-party font files or claim the fallback is Telenor.
 
-The green-and-ink homepage uses an original AI-generated human illustration exported as background-free, responsive WebP assets (880px and 440px). The SVG illustrations, including three larger launch/model/poll scenes, and two-tone UI icons are original project assets reused across discovery, launches, models, rankings, and information pages. They are not copies of the supplied commercial reference packs; the reference image URLs could not be fetched in this environment.
+The green-and-ink homepage uses an original AI-generated human illustration exported as background-free, responsive WebP assets (880px and 440px). The SVG illustrations, including the launch and poll scenes, and two-tone UI icons are original project assets reused across discovery, launches, polls, rankings, and information pages. They are not copies of the supplied commercial reference packs; the reference image URLs could not be fetched in this environment.
 
-The homepage keeps its hero under 30 words, using image-led navigation rather than repeated explanatory copy. About and Guidelines retain the fuller context. On phones, search expands on demand, a native feed filter exposes every category, and labeled composer controls remain visible. Post reactions use a keyboard-accessible disclosure to avoid crowded action rows.
+The homepage keeps its hero under 30 words, using image-led navigation rather than repeated explanatory copy. About and Guidelines retain the fuller context. On phones, search expands on demand, a native feed filter exposes every category, and labeled composer controls remain visible. Every post has a visible, labelled reaction bar, with a compact 3-by-2 layout on phones.
 
 ## Frontend validation and performance
 
@@ -154,28 +157,39 @@ npm run build
 npm run preview -- --port 5173
 ```
 
-`npm test` builds a disposable bundle in ignored `.cache/` and exercises navigation, the landing/feed split, catalogue ratings, authentication, polls, likes, chat, composition, profile editing, and messages with jsdom. PHP feature tests still require the Laravel/PHP environment described above.
+`npm test` builds a disposable bundle in ignored `.cache/` and exercises navigation, the landing/feed split, catalogue retirement, authentication, polls, likes, chat, composition, profile editing, and messages with jsdom. PHP feature tests still require the Laravel/PHP environment described above.
 
 Performance work in this redesign:
 - Removed the unused previous hero image, obsolete hero CSS, and unused bootstrap placeholder; retained backend files and functional routes.
 - Inline SVG icon paths and self-hosted assets avoid third-party UI requests. Unchanged feed cards are reused instead of re-created, preserving decoded images, focus, and comment drafts.
 - Hero artwork is approximately **63 kB desktop / 22 kB mobile**, selected with `srcset` and `sizes`, with explicit dimensions and high loading priority. The old hero was 76 kB on all devices.
-- Original SVG illustrations and resolution-independent character avatars are cacheable and lazy-loaded; fonts remain self-hosted with `font-display: swap` and unicode-range selection. No remote image/font requests are required.
+- SVG illustrations and optimized local WebP avatars are cacheable and lazy-loaded; fonts remain self-hosted with `font-display: swap` and unicode-range selection. No remote image/font requests are required.
 - Existing Apache compression and static-asset caching remain in `public/.htaccess`. Production performance should be measured on the deployed host; these asset-size improvements are not a promise about network speed or Core Web Vitals.
 
 The privacy and terms pages are operational starter copy. Review them with the site operator or legal adviser for the jurisdictions and data retention practices that apply before public launch.
 
-## Catalogue and profile update
+## Badges, brand claims, and dedicated creation pages
 
-Migration `2026_10_14_000014_create_ai_model_catalogue.php` creates the admin-managed catalogue and unique member/model ratings, and adds launch SEO descriptions (160 characters). Run `php artisan migrate` before serving the updated application. Production starts with an empty catalogue: administrators create, edit, and archive entries at `/admin`. Archiving preserves ratings. Authenticated active members rate from 1–5; changing a score updates the existing rating. Legacy model-share posts are retained in storage but excluded from public discovery; members can publish posts, questions, polls, and launches instead.
+Run `php artisan migrate` before deploying. Migration `2026_10_14_000015_add_member_badges_and_brand_claims.php` adds `member_badges` and `brands`. The earlier catalogue migration is retained (including its SEO-description column) to preserve migration history and existing data. No catalogue data is deleted; catalogue routes and controls are no longer exposed.
 
-Profile settings use normal document scrolling with a hidden scrollbar, 80 illustrated skill suggestions, 24 original character avatars, and eight refreshed layered gradient covers. Expandable pickers keep the default page compact; searching skills still searches the entire catalogue. Existing avatar choices and uploads remain supported. Demo catalogue management and ratings are browser-local simulations, not shared server data.
+- **Creation:** Four independent URLs with type-specific forms and metadata. Guests can open the pages and sign in without losing the intended destination. The launch studio includes a text preview, project logo, optional screenshot, SEO description, and optional brand claim. Failed submissions preserve the form; duplicate submits are guarded.
+- **Activity badges:** First contribution, 10 visible contributions, first launch, 3 polls, or 10 comments on visible content. These are computed on profile requests, not by adding queries to every feed card. Hidden/deleted content and reposts do not count toward publishing milestones.
+- **Admin badges:** Community star, Expert, and Early supporter can be awarded or revoked in each member’s admin controls. Database uniqueness prevents duplicate awards; the awarding administrator is recorded. Members cannot self-award.
+- **Brand claims:** Optional lowercase 3–40-character handle (letters, numbers, internal hyphens), with an authorization confirmation. Publishing creates the post and claim in one transaction. A unique database index prevents competing claims; validation alone is not relied upon. A handle is tied to one launch. Deleting that launch releases the handle; hiding it keeps the reservation but hides its public page. A claim is not trademark registration.
+- **Verification:** Claims start pending, never verified. In `/admin#brands`, independently confirm control of the linked project (for example, via a challenge on its website or documented ownership) before selecting Verified ownership. The green tick is only shown for an admin-verified claim; rejecting or returning to pending revokes it. The last reviewer and review time are recorded. There is no automated domain verification or payment-based verification.
+- **Avatars:** 24 Microsoft Fluent Emoji 3D choices (6 male, 6 female, 12 characters), locally hosted as responsive WebP under MIT. Attribution and license: `public/avatars/fluent/`. No avatars were AI-generated. Legacy selections resolve to new artwork through a shared alias map; uploads are unchanged. Original legacy SVG files remain solely for old external links.
+- **Preview:** Posts, claims, badge awards, and verification controls are browser-local demonstrations. They are not production authorization or shared state. Google/Facebook controls are shown but explain the demo limitation; actual OAuth runs only through the configured Laravel routes.
+- **Typography:** Telenor remains first in the font stack, with a self-hosted fallback. You must supply licensed WOFF2 files to activate it for visitors who do not have it installed. No proprietary font was downloaded or substituted under its name.
 
-Validation for this update: `npm test` covers the existing community flows plus request failures/retries, malformed URLs, single-post deep links and SEO, refreshed sign-in CSRF tokens, ranking double-click protection, retained comment drafts, profile double-save protection, and expandable pickers. Chromium checks covered six pages at 320, 390, 768, and 1440 pixels (24 responsive checks), profile save/reload, launch publishing, upvote/downvote/toggle, and poll publishing/voting. No horizontal overflow or JavaScript runtime errors were found in those checks. These checks do not guarantee a bug-free site.
+The homepage retains its hero, palette, section order, and feature-card layout. Copy is shorter, the old catalogue card explains badges, artwork is contained rather than cropped, and missing images have a non-looping fallback.
 
-`tests/Feature/CommunityRefinementTest.php` adds backend coverage for login tokens, profile hydration, deep-link visibility, poll/URL validation, and non-multiplying engagement aggregates. **Laravel feature tests and migrations were not executed because this environment has no PHP runtime.** Run `php artisan test` in a configured PHP environment before deployment.
+### Validation for this update
 
-## Performance and upload polish (no page redesign)
+`npm test` covers catalogue retirement, separate creation routes, Google/Facebook entry points, refreshed CSRF, existing community interactions, profile editing and new avatars. `npm run build` produces production assets. Chromium responsive checks passed on 12 pages at 320, 390, 768, and 1440 pixels (48 checks), with no horizontal overflow, broken image requests, cropped feature artwork, or JavaScript exceptions in those checks. Interaction checks cover the dedicated forms, brand claim/duplicate rejection, local admin badge award/revocation, local verification/revocation, poll voting, and avatar save/reload. These checks are not a guarantee that every issue on the site is fixed.
+
+`tests/Feature/BadgesAndBrandsTest.php` covers route separation, claim validation/uniqueness, optional claims, visibility, non-self-verification, admin-only awards/revocation, and activity badges. **PHP/Laravel tests and migrations have not run in this sandbox because PHP and Composer are unavailable.** Run `php artisan test` on a configured PHP environment before production. Live Google/Facebook OAuth also requires credentials and provider callback testing on the deployment domain.
+
+## Earlier performance and upload polish (historical measurements)
 
 - Removed 21 unreachable Material icon variants (original illustrated icons still render exactly as before). Icon and skill markup is memoized with bounded caches. The production application JS changed from 176.61 kB / 52.20 kB gzip to 170.02 kB / 51.37 kB gzip, including the new upload controls. These are bundle-size measurements, not measured production latency or Core Web Vitals.
 - Opening/closing dialogs no longer regenerates the underlying page/feed. Rankings no longer fetch an unused 60-post feed. Fingerprinted JS/CSS/font assets can use a one-year immutable Apache cache; HTML, private JSON, and ordinary uploads are excluded.
@@ -185,3 +199,14 @@ Validation for this update: `npm test` covers the existing community flows plus 
 - Added stale-profile-response protection, profile return-navigation regression coverage, and clear errors for non-JSON success responses.
 
 Verification: frontend regression/smoke tests and production build pass. Chromium checks cover avatar visibility, file selection/removal/validation, and picker overlap at 320, 390, 768, and 1440 pixels, plus the existing 24 responsive community checks. Backend eager-loading assertions have been added but require `php artisan test` on a configured PHP environment; PHP is not installed in this sandbox. No licensed Telenor binaries have been supplied, so visitors without that font locally installed still use Figtree.
+
+## Fast avatars and visible reactions
+
+- Avatars now use content-fingerprinted **96px / 256px WebP** variants with responsive `srcset`. Header/profile avatars load eagerly; feed and picker images load lazily. Old PNG/SVG library selections resolve to optimized URLs, and uploaded profile photos are preserved.
+- The original 12 characters totalled **471,078 bytes as PNG**. Their 96px WebP variants total **40,730 bytes (91.4% smaller)**. Across all 24 avatars, small files are 2.4–4.4 KB and large files 3.8–10.2 KB. These are asset-size reductions, not a promise about network latency.
+- Profile settings have separate **Male**, **Female**, and **Characters** groups. Unopened groups contain request-free placeholders. Switching groups preserves the selected radio value; Random operates in the visible group. The setting is purely an avatar choice, not a gender field.
+- Every post, poll, question, launch and repost exposes **Love, Celebrate, Helpful, Support, Haha and Wow**, using small local 3D image icons. Love preserves the existing like counts/API. One additional reaction per member can be switched or removed by clicking again. Existing reaction data remains valid; no new reaction migration is required (the column is a string).
+- Reaction mutations are guarded against rapid duplicate clicks; failures retain the previous choice. Only reaction controls update, preserving decoded post images and reply drafts. Original/repost copies stay in sync. Backend reaction updates are transactional and still require an active authenticated account.
+- Apache immutable caching applies only to content-fingerprinted artwork; filenames change when content changes. Rebuild instructions and the MIT source/license are in `public/avatars/fluent/`.
+
+Validation: frontend tests and asset byte-budget checks pass. Chromium checks verify WebP-only avatar requests, deferred hidden groups, selection/save/reload, reaction switching/removal, retained replies, and responsive rendering at 320/390/768/1440px. PHP tests for portrait assets and reaction authorization/persistence are included in `tests/Feature/AvatarReactionsTest.php`; they still require a configured PHP/Laravel environment to execute.

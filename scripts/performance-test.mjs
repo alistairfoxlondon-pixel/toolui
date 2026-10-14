@@ -32,5 +32,22 @@ assert.equal(validateUpload({name:'logo.svg',type:'image/svg+xml',size:100},'log
 assert.match(validateUpload({name:'logo.svg',type:'image/svg+xml',size:100},'logo',false),/live site/);
 assert.match(renderUploadField({name:'avatar',title:'Photo',accept:'image/png',hint:'PNG',icon:''}),/aria-labelledby="upload-avatar-label"/);
 const app = await readFile(new URL('../resources/js/app.js',import.meta.url),'utf8');
-assert.match(app, /\['feed','launches'\]\.includes\(state.page\) && !state.feedLoaded/, 'rankings must not fetch an unused full feed');
+assert.match(app, /\['feed','launches','polls'\]\.includes\(state.page\) && !state.feedLoaded/, 'rankings must not fetch an unused full feed');
 console.log('PASS: font activation/cache invalidation, memoized skill artwork, upload types/limits, ranking request scope');
+
+const avatarAssets = JSON.parse(await readFile(new URL('../resources/data/avatar-assets.json', import.meta.url), 'utf8'));
+const reactionAssets = JSON.parse(await readFile(new URL('../resources/data/reaction-assets.json', import.meta.url), 'utf8'));
+assert.equal(Object.keys(avatarAssets).length,24);
+for (const item of Object.values(avatarAssets)) {
+    for (const size of ['small','large']) {
+        const image = await readFile(new URL(`../public${item[size]}`,import.meta.url));
+        assert.match(item[size], /-[a-f0-9]{10}\.webp$/);
+        assert.equal(image.toString('ascii',8,12),'WEBP');
+        assert.ok(image.length < (size==='small'?5000:12000), `${size} avatar exceeds its byte budget`);
+    }
+}
+for (const path of Object.values(reactionAssets)) {
+    const image=await readFile(new URL(`../public${path}`,import.meta.url));
+    assert.ok(image.length<5000,'reaction icon exceeds its byte budget');
+}
+console.log('PASS: all 24 avatars and 6 reaction icons are local fingerprinted WebP assets within byte budgets');

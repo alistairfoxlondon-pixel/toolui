@@ -91,6 +91,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'user' => array_merge(PostPresenter::userSummary($profile), [
+                'badges' => \App\Support\BadgeLibrary::forUser($profile),
                 'email' => $viewer && $viewer->id === $profile->id ? $profile->email : null,
                 'postsCount' => $profile->posts()
                     ->where('type', '!=', 'model')->where('is_hidden', false)

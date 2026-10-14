@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Post extends Model
 {
@@ -34,6 +35,11 @@ class Post extends Model
             'is_hidden' => 'boolean',
             'is_featured' => 'boolean',
         ];
+    }
+
+    public function brand(): HasOne
+    {
+        return $this->hasOne(Brand::class);
     }
 
     public function author(): BelongsTo

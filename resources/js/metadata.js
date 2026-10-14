@@ -1,7 +1,13 @@
 const pages = {
-    home: ['Build together', 'Launch your vibe-coded app, find fellow makers, ask questions, and rate the AI models you build with.'],
+    polls: ['Community polls', 'Compare tools and get feedback from real makers.'],
+    badges: ['Member badges', 'Milestones and recognition for your contributions.'],
+    help: ['Help & features', 'Find your way around VibeDock.'],
+    'create-post': ['Share a post', 'Share your progress with the community.'],
+    'create-question': ['Ask a question', 'Get help from fellow makers.'],
+    'create-poll': ['Create a poll', 'Gather real opinions from makers.'],
+    'create-launch': ['Launch your project', 'Give your project and brand a home.'],
+    home: ['Build together', 'Launch your vibe-coded app, find fellow makers, ask questions, and gather real opinions with community polls.'],
     feed: ['Community feed', 'Share progress, ask coding questions, and collect opinions with community polls.'],
-    models: ['AI model ratings for vibe coding', 'Compare admin-curated AI models using ratings from makers who build with them.'],
     launches: ['Apps & websites made with AI', 'Explore vibe-coded apps and websites, try a project, and support its maker.'],
     rankings: ['Top builds & community makers', 'Discover apps and websites ranked by upvotes minus downvotes, plus community engagement leaders.'],
     'profile-edit': ['Edit your profile', 'Personalize your maker profile, skills, character avatar, and gradient cover.'],
@@ -27,7 +33,7 @@ export function updateMetadata(state, apiEnabled) {
     meta('description', description);
     meta('og:title', document.title, true); meta('og:description', description, true); meta('og:url', url, true);
     meta('twitter:title', document.title); meta('twitter:description', description);
-    meta('robots', !apiEnabled || ['messages', 'profile-edit', 'admin'].includes(state.page) || ['/login','/register'].includes(location.pathname) ? 'noindex, nofollow' : 'index, follow');
+    meta('robots', !apiEnabled || state.page.startsWith('create-') || ['messages', 'profile-edit', 'admin'].includes(state.page) || ['/login','/register'].includes(location.pathname) ? 'noindex, nofollow' : 'index, follow');
     let canonical = document.head.querySelector('link[rel="canonical"]');
     if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.append(canonical); }
     canonical.href = url;

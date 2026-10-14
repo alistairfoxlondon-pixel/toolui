@@ -23,7 +23,7 @@ function harness(path, config = {}, handler = () => ({})) {
     const $ = selector => w.document.querySelector(selector);
     const click = selector => { const el = typeof selector === 'string' ? $(selector) : selector; assert.ok(el, `Missing control ${selector}`); el.dispatchEvent(new w.MouseEvent('click', {bubbles:true, cancelable:true})); };
     const input = (selector, value) => {const el = $(selector); el.value = value; el.dispatchEvent(new w.Event('input', {bubbles:true}));};
-    const submit = selector => $(selector).dispatchEvent(new w.Event('submit', {bubbles:true, cancelable:true}));
+    const submit = selector => (typeof selector === 'string' ? $(selector) : selector).dispatchEvent(new w.Event('submit', {bubbles:true, cancelable:true}));
     return {w, $, click, input, submit, calls, close() {assert.deepEqual(errors, []); w.close();}};
 }
 
@@ -33,19 +33,16 @@ function harness(path, config = {}, handler = () => ({})) {
     h.close();
 }
 {
-    let resolve; let retry = false;
-    const h = harness('/models', {}, async url => url === '/api/models' ? retry ? {data:[model]} : await new Promise(r => {resolve=r;}) : {});
-    assert.match(h.$('.catalogue-grid').textContent, /Loading/);
-    assert.equal(h.$('.models-page > .route-empty'), null);
-    resolve({status:503, message:'Catalogue temporarily unavailable'}); await tick();
-    assert.match(h.$('.models-page').textContent, /temporarily unavailable/);
-    retry = true; h.click('[data-action="reload-models"]'); await tick();
-    const search = h.$('[data-model-search]'); search.focus();
-    h.input('[data-model-search]', 'Test');
-    assert.equal(search, h.$('[data-model-search]'), 'search must not replace focused input');
-    assert.equal(h.w.document.activeElement, search);
-    h.input('[data-model-search]', 'nothing'); assert.match(h.$('.route-empty').textContent, /Try another search/);
-    h.input('[data-model-search]', ''); assert.ok(h.$('.catalogue-card'));
+    let retry = false;
+    const h = harness('/models', {}, async url => url === '/api/feed' ? retry ? {data:[]} : {status:503, message:'Polls temporarily unavailable'} : {});
+    await tick();
+    assert.equal(h.w.location.pathname, '/polls');
+    assert.equal(h.$('.catalogue-grid'), null);
+    assert.ok(h.$('.polls-page'));
+    assert.match(h.$('.polls-page').textContent, /temporarily unavailable/);
+    retry = true; h.click('[data-action="reload-feed"]'); await tick();
+    assert.match(h.$('.polls-page').textContent, /Be the first/);
+    assert.ok(!h.calls.some(call => call.url.includes('/api/models')));
     h.close();
 }
 {
@@ -58,19 +55,19 @@ function harness(path, config = {}, handler = () => ({})) {
     h.close();
 }
 {
-    const h = harness('/models', {}, async url => {
+    const h = harness('/create/post', {}, async url => {
         if (url === '/login') return {user:member, csrfToken:'fresh-token'};
-        if (url === '/api/models') return {data:[model]};
-        if (url.endsWith('/rating')) return {model:{...model, ratingCount:1, averageRating:5, myRating:5}};
-        return {};
+        if (url === '/api/posts') return {post:{id:'new',type:'discussion',body:'Hello builders'}};
+        return {data:[]};
     });
-    await tick(); h.click('[data-action="open-auth"][data-mode="login"]');
+    await tick(); h.click('.create-page [data-action="open-auth"][data-mode="login"]');
+    assert.ok(h.$('[href="/auth/google/redirect"]'));
+    assert.ok(h.$('[href="/auth/facebook/redirect"]'));
     h.input('[name="email"]', 'test@example.com'); h.input('[name="password"]', 'password'); h.submit('[data-form="auth"]'); await tick();
     assert.equal(h.$('meta[name="csrf-token"]').content, 'fresh-token');
-    h.click('[data-action="rate-model"][data-score="5"]'); await tick();
-    assert.equal(h.calls.find(call=>call.url.endsWith('/rating')).options.headers['X-CSRF-TOKEN'], 'fresh-token');
-    assert.equal(h.$('[data-score="5"]').getAttribute('aria-pressed'), 'true');
-    assert.equal(h.$('[data-type="model"]'), null, 'member model submission must not return');
+    h.input('[name="body"]', 'Hello builders'); h.submit('[data-form="compose"]'); await tick();
+    assert.equal(h.calls.find(call=>call.url==='/api/posts').options.headers['X-CSRF-TOKEN'], 'fresh-token');
+    assert.equal(h.$('[data-type="model"]'), null);
     h.close();
 }
 {
@@ -122,4 +119,124 @@ function harness(path, config = {}, handler = () => ({})) {
     assert.ok(h.$('.profile-card'), 'returning to a profile must not get stuck at not-found');
     h.close();
 }
-console.log('PASS: malformed URLs, loading/retry, stable search, deep-link SEO, refreshed CSRF, ranking votes, profile double-save protection');
+console.log('PASS: malformed URLs, loading/retry, catalogue retirement, deep-link SEO, refreshed CSRF, ranking votes, profile double-save protection');
+
+for (const [kind, type] of [['post','discussion'], ['question','question'], ['poll','poll'], ['launch','launch']]) {
+    const h = harness(`/create/${kind}`, {apiEnabled:false, currentUser:member});
+    assert.equal(h.$('[data-form="compose"]').dataset.type, type);
+    assert.equal(h.$('.modal-backdrop'), null);
+    assert.equal(h.$('.compose-type-switch'), null);
+    if (kind !== 'post') h.input('[name="title"]', `A new ${kind}`);
+    h.input('[name="body"]', 'A useful contribution for fellow makers.');
+    if (kind === 'poll') {
+        const options = h.w.document.querySelectorAll('[name="options[]"]'); options[0].value='Claude'; options[1].value='Gemini';
+    }
+    if (kind === 'launch') {
+        h.input('[name="project_url"]', 'https://example.com');
+        h.input('[name="brand_slug"]', 'fresh-brand');
+        h.$('[name="brand_authorized"]').checked = true;
+        assert.equal(h.$('[data-launch-title]').textContent, 'A new launch');
+    }
+    h.submit('[data-form="compose"]'); await tick();
+    const posts = JSON.parse(h.w.localStorage.getItem('vibedock-preview-posts'));
+    assert.equal(posts[0].type, type);
+    assert.equal(h.w.location.pathname, kind === 'launch' ? '/launches' : '/feed');
+    if (kind === 'launch') {
+        assert.equal(posts[0].brand.status, 'pending');
+        assert.equal(h.$('.verified-business'), null, 'claiming never self-verifies');
+        h.click('[data-action="open-compose"][data-type="launch"]');
+        h.input('[name="title"]','Another launch'); h.input('[name="body"]','Another useful contribution');
+        h.input('[name="project_url"]','https://example.com'); h.input('[name="brand_slug"]','fresh-brand');
+        h.$('[name="brand_authorized"]').checked=true; h.submit('[data-form="compose"]'); await tick();
+        assert.match(h.$('[data-form-message]').textContent, /already claimed/);
+        assert.equal(h.$('[name="title"]').value,'Another launch');
+        assert.equal(JSON.parse(h.w.localStorage.getItem('vibedock-preview-posts')).length,posts.length);
+        h.click('[data-action="open-my-profile"]'); await tick();
+        assert.match(h.$('.member-badges').textContent,/First step/);
+        assert.match(h.$('.member-badges').textContent,/Launched it/);
+    }
+    h.close();
+}
+{
+    let resolveSave;
+    const h = harness('/create/launch', {currentUser:member}, async url => url === '/api/posts' ? await new Promise(resolve=>{resolveSave=resolve;}) : {data:[]});
+    h.input('[name="title"]','My draft'); h.input('[name="body"]','Useful project details'); h.input('[name="project_url"]','https://example.com');
+    await tick();
+    assert.equal(h.$('[name="title"]').value,'My draft','background account request must preserve form');
+    h.submit('[data-form="compose"]'); h.submit('[data-form="compose"]');
+    assert.equal(h.calls.filter(call=>call.url==='/api/posts').length,1,'duplicate publish is guarded');
+    resolveSave({status:422,message:'Please choose another handle.'}); await tick();
+    assert.equal(h.$('[name="title"]').value,'My draft');
+    assert.match(h.$('[data-form-message]').textContent,/another handle/);
+    assert.equal(h.$('[data-form="compose"] [type="submit"]').disabled,false);
+    h.close();
+}
+{
+    const h=harness('/admin',{apiEnabled:false,currentUser:{...member,isAdmin:true}});
+    const form=h.$('[data-form="demo-badge"]');
+    form.elements.user.value=String(member.id); form.elements.badge.value='expert';
+    h.submit(form); await tick();
+    h.click('[data-action="open-my-profile"]');await tick();
+    assert.match(h.$('.member-badges').textContent,/Expert/);
+    h.close();
+}
+for (const mode of ['login','register']) {
+    const h=harness(`/${mode}`,{apiEnabled:false});
+    assert.equal(h.$('[data-form="auth"]').dataset.mode, mode);
+    assert.equal(h.w.document.querySelectorAll('[data-action="demo-social"]').length,2);
+    h.click('[data-action="demo-social"]'); assert.match(h.$('.toast').textContent,/configured live server/);
+    h.close();
+}
+{
+    const h=harness('/settings/profile',{apiEnabled:false,currentUser:member});
+    assert.match(h.$('.settings-avatar').src,/fluent-astronaut-256-[a-f0-9]+\.webp/,'old avatar selections resolve to new art');
+    const choices=[...h.w.document.querySelectorAll('.avatar-choice img')];
+    assert.equal(choices.length,6, 'only the initial male category has images');
+    assert.equal(h.w.document.querySelectorAll('.avatar-choice').length,24);
+    assert.equal(h.w.document.querySelectorAll('[data-avatar-image]').length,18, 'other groups have request-free placeholders');
+    h.click('[data-action="avatar-group"][data-group="Female"]');
+    assert.equal(h.w.document.querySelectorAll('[data-avatar-group="Female"] img').length,6);
+    h.click('[data-action="avatar-group"][data-group="Characters"]');
+    h.click('[data-action="expand-avatars"]');
+    assert.equal(h.w.document.querySelectorAll('.avatar-choice img').length,24);
+    for (const img of choices) assert.ok(fs.existsSync(new URL(`../public${new URL(img.src).pathname}`,import.meta.url)));
+    h.close();
+}
+console.log('PASS: dedicated creation, safe claims, draft retention, duplicate publish protection, member badges, social entry points, local avatar assets');
+
+{
+    let respond;
+    const post={id:'react-test',type:'discussion',body:'A useful update',author:member,reactions:{celebrate:0,helpful:0,support:0,laugh:0,wow:0},myReaction:null};
+    const h=harness('/feed',{currentUser:member},async url=>{
+        if(url==='/api/feed') return {data:[post]};
+        if(url.endsWith('/react')) return await new Promise(resolve=>{respond=resolve;});
+        return {data:[]};
+    });
+    await tick(); h.click('[data-action="comment-toggle"]');h.input('.comment-form input','Keep my unfinished reply');
+    const card=h.$('.post-card'); const draft=h.$('.comment-form input');
+    h.click('[data-reaction="laugh"]');h.click('[data-reaction="wow"]');
+    assert.equal(h.calls.filter(call=>call.url.endsWith('/react')).length,1,'rapid reaction clicks send one mutation');
+    assert.equal(h.$('[data-reaction="wow"]').disabled,true);
+    respond({reactions:{...post.reactions,laugh:1},myReaction:'laugh'}); await tick();
+    assert.equal(h.$('.post-card'),card,'reaction updates must not recreate cards or their images');
+    assert.equal(h.$('.comment-form input'),draft);
+    assert.equal(draft.value,'Keep my unfinished reply');
+    assert.equal(h.$('[data-reaction="laugh"]').getAttribute('aria-pressed'),'true');
+    h.click('[data-reaction="wow"]');respond({status:503,message:'Please try again'});await tick();
+    assert.equal(h.$('[data-reaction="laugh"]').getAttribute('aria-pressed'),'true','failure retains previous choice');
+    assert.equal(h.$('[data-reaction="wow"]').disabled,false);
+    h.close();
+}
+{
+    const h=harness('/feed',{apiEnabled:false,currentUser:member});await tick();
+    const first=h.$('.post-card');const id=first.dataset.post;
+    h.click(first.querySelector('[data-action="repost"]'));await tick();
+    const copies=()=>[...h.w.document.querySelectorAll(`[data-action="react"][data-post-id="${id}"][data-reaction="wow"]`)];
+    assert.equal(copies().length,2);
+    h.click(copies()[0]);await tick();
+    assert.ok(copies().every(button=>button.getAttribute('aria-pressed')==='true'),'original and repost reaction views stay in sync');
+    h.click(copies()[1]);await tick();
+    assert.ok(copies().every(button=>button.getAttribute('aria-pressed')==='false'));
+    h.close();
+}
+console.log('PASS: reaction mutation guards, failure recovery, stable cards/drafts, original/repost synchronization');
