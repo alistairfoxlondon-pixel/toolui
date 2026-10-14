@@ -19,19 +19,6 @@ use RuntimeException;
 
 class ProfileController extends Controller
 {
-    private array $postRelations = [
-        'author:id,name,username,bio,profession,skills,website,avatar_path,avatar_choice,is_admin',
-        'votes:id,post_id,user_id,option_index',
-        'launchVotes:id,post_id,user_id,vote',
-        'likes:id',
-        'reactions:id,post_id,user_id,reaction',
-        'sourcePost.author:id,name,username,bio,profession,skills,website,avatar_path,avatar_choice,is_admin',
-        'sourcePost.votes:id,post_id,user_id,option_index',
-        'sourcePost.launchVotes:id,post_id,user_id,vote',
-        'sourcePost.likes:id',
-        'sourcePost.reactions:id,post_id,user_id,reaction',
-    ];
-
     public function search(Request $request): JsonResponse
     {
         $data = $request->validate(['q' => ['nullable', 'string', 'max:80']]);
@@ -78,7 +65,7 @@ class ProfileController extends Controller
             ->where(fn ($query) => $query
                 ->where('type', '!=', 'repost')
                 ->orWhereHas('sourcePost', fn ($source) => $source->where('type', '!=', 'model')->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true))))
-            ->with($this->postRelations)
+            ->with(PostPresenter::relations($request->user()))
             ->withCount(['comments', 'likes', 'reposts'])
             ->latest()
             ->limit(40)

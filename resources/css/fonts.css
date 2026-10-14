@@ -1,4 +1,25 @@
-/* Telenor is a proprietary family: only use local installations or licensed assets.
-   When a licensed WOFF2 is supplied, add its @font-face here with font-display: swap.
-   Figtree is the OFL-licensed self-hosted fallback, loaded only for relevant scripts. */
+/* Telenor/GP is proprietary. These are genuine local faces, not a renamed fallback.
+   Licensed WOFF2 files, when supplied, are added by brand-font-plugin.mjs at build time. */
 @import '@fontsource-variable/figtree/wght.css';
+
+@font-face {
+    font-family: 'Telenor GP';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Telenor Evolution Regular'), local('Telenor Evolution'), local('Telenor Regular'), local('Telenor');
+}
+@font-face {
+    font-family: 'Telenor GP';
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: local('Telenor Evolution Medium'), local('Telenor Medium');
+}
+@font-face {
+    font-family: 'Telenor GP';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local('Telenor Evolution Bold'), local('Telenor Bold');
+}

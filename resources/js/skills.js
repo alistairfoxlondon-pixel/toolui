@@ -61,9 +61,38 @@ const paths = [
     ['Motion design', 'M16 11h23v23H16Zm-13 4h8m-11 7h10m-7 7h8M26 5l5-4m-5 40 5 4'],
     ['Game development', 'M10 13h28c11 0 15 27 4 27l-11-9H17L6 40C-7 40-1 13 10 13Zm4 5v12m-6-6h12m15-4h1m4 7h1'],
     ['3D design', 'm24 2 21 11v25L24 49 3 38V13Zm0 0v24m0 0L3 13m21 13 21-13M24 26v23'],
+    ['Astro', 'M8 35 20 3h10l11 32-13-7-14 7Zm12 1c-4 9 12 14 12 0m-8-24-5 14h10Z'],
+    ['Angular', 'm24 2 21 8-4 26-17 10L7 36 3 10ZM12 33 24 11l12 22m-19-8h14'],
+    ['Nuxt', 'm2 37 15-28 16 28Zm21 0L33 18l13 19Z'],
+    ['Remix', 'M8 41V5h19c21 0 19 24 2 24H17m8 0 14 12M17 14h10c9 0 9 7 0 7H17'],
+    ['SolidJS', 'm5 12 19-8 19 8-19 9Zm0 10 19 9 19-9M5 32l19 10 19-10M5 12v20m38-20v20'],
+    ['Django', 'M26 3v32H15C0 34 0 14 15 14h11m10-1v22c0 9-5 11-9 11m9-43v5'],
+    ['FastAPI', 'M24 3a21 21 0 1 1-1 0Zm4 5L13 25h10l-4 15 16-20H25Z'],
+    ['Flask', 'M17 3h14m-11 0v17L5 38c-2 4 1 7 5 7h28c5 0 7-4 4-7L28 20V3M13 29h22m-18 9h1m10-3h1'],
+    ['Express', 'M3 13h20v12H3c0 14 13 14 20 8m5-21 17 23m0-23L28 35'],
+    ['SQLite', 'M6 5h30v38H6Zm13 29 17-19 9-12c-17-1-28 15-26 31Zm0 0-4 11'],
+    ['Prisma', 'M28 2 46 36 18 46 3 28Zm0 0L18 46m10-33 10 21-14 5Z'],
+    ['Drizzle', 'm8 6-5 12m20-7-5 12m20-17-5 12m-19 9-5 12m20-6-5 12m20-18-5 12'],
+    ['Penpot', 'M8 15h32l-4 30H12Zm7 0V5h6v10m5 0V2h6v13M16 27l8-7 8 7-8 7Z'],
+    ['Framer', 'M7 3h34v14H24l17 15H24v15L7 32V17h17L7 3Z'],
+    ['Webflow', 'M2 14h9l-2 18 13-18h9l-3 18 12-18h8L25 42h-9l2-15L8 42H1Z'],
+    ['Flutter', 'M34 3h12L18 30 7 20Zm-7 21h17L31 37l13 11H27L15 36Z'],
+    ['React Native', 'M15 3h18v42H15Zm-7 14c12-10 35 0 31 9S1 27 8 17Zm1 12c-3-8 22-20 30-12s-18 23-30 12Z'],
+    ['AI evaluation', 'M5 7h20v28H5Zm6 8h8m-8 8h8m-8 6h5M31 9h12v19H31Zm6 19v12m-7-4 7 7 9-15'],
+    ['Fine-tuning', 'M4 10h40M4 24h40M4 38h40M14 5v10m20 4v10M21 33v10'],
+    ['MCP', 'm4 16 12-12 14 14m-21 5L22 10l18 18-13 13m-12-12 9-9 8 8-9 9m7-19 9-9 7 7-9 9'],
+
 ];
 export const SKILLS = paths.map(([name, path]) => ({ name, path }));
+const skillPaths = new Map(SKILLS.map(skill => [skill.name.toLowerCase(), skill.path]));
+const skillMarkup = new Map();
 export function skillIcon(name) {
-    const path = SKILLS.find(skill => skill.name.toLowerCase() === name.toLowerCase())?.path || 'M9 8h30v28H9Zm7 8-5 6 5 6m16-12 5 6-5 6m-8-14-4 16';
-    return `<svg class="skill-illustration" width="48" height="48" viewBox="-4 -4 56 56" fill="none" stroke="#23382B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="#DFF4BD" stroke="none"/><path d="${path}"/></svg>`;
+    if (skillMarkup.has(name)) return skillMarkup.get(name);
+    const path = skillPaths.get(name.toLowerCase()) || 'M9 8h30v28H9Zm7 8-5 6 5 6m16-12 5 6-5 6m-8-14-4 16';
+    const colors = ['#DFF4BD','#D9E9FC','#F9DFBA','#E8DBF5','#D1EEE5','#F6DDE4'];
+    const color = colors[[...name].reduce((sum, char) => sum + char.charCodeAt(0), 0) % colors.length];
+    const markup = `<svg class="skill-illustration" width="48" height="48" viewBox="-4 -4 56 56" fill="none" stroke="#23382B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="${color}" stroke="none"/><path d="${path}"/></svg>`;
+    if (skillMarkup.size >= 256) skillMarkup.clear();
+    skillMarkup.set(name, markup);
+    return markup;
 }

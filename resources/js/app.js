@@ -5,6 +5,9 @@ import '../css/product-pages.css';
 import { ICON_PATHS, ICON_PATHS_FILLED } from './icon-paths.js';
 import { checkMessage } from './moderation.js';
 import CHARACTER_AVATARS from '../data/character-avatars.json';
+import { renderUploadField, syncUpload, validateUpload } from './uploads.js';
+import { updateMetadata } from './metadata.js';
+import { reconcileCards, routeParts as parseRoute } from './dom.js';
 import { SKILLS, skillIcon } from './skills.js';
 import { ILLUSTRATED_ICONS } from './illustrated-icons.js';
 
@@ -20,7 +23,17 @@ const STORAGE = {
 /* Icons — Google Material Symbols Rounded, inlined as SVG paths.      */
 /* ------------------------------------------------------------------ */
 
+const iconCache = new Map();
 function icon(name, size = 22, className = '', filled = false) {
+    const key = `${name}:${size}:${className}:${filled}`;
+    if (!iconCache.has(key)) {
+        if (iconCache.size >= 512) iconCache.clear();
+        iconCache.set(key, renderIcon(name, size, className, filled));
+    }
+    return iconCache.get(key);
+}
+
+function renderIcon(name, size, className, filled) {
     if (ILLUSTRATED_ICONS[name]) return `<svg class="icon illustrated-icon ${filled ? 'is-filled' : ''} ${className}" width="${size}" height="${size}" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ILLUSTRATED_ICONS[name]}</svg>`;
     const path = (filled ? ICON_PATHS_FILLED[name] : null) || ICON_PATHS[name] || ICON_PATHS.explore;
     return `<svg class="icon ${className}" width="${size}" height="${size}" viewBox="0 -960 960 960" fill="currentColor" aria-hidden="true"><path d="${path}"/></svg>`;
@@ -216,7 +229,7 @@ const DEMO_MODELS = [
 
 const storedUser = apiEnabled ? null : readStorage(STORAGE.user);
 const storedPosts = apiEnabled ? null : readStorage(STORAGE.posts);
-const routeParts = decodeURIComponent(window.location.pathname).split('/').filter(Boolean);
+const routeParts = parseRoute(window.location.pathname);
 const routePages = {
     feed: 'feed', posts: 'feed', settings: 'profile-edit',
     launches: 'launches', models: 'models', rankings: 'rankings', 'community-chat': 'community-chat',
@@ -231,7 +244,7 @@ const state = {
     profileUsername: config.profileUsername || (pathPage === 'profile' ? routeParts[1] : null),
     initialPostId: config.initialPostId || (routeParts[0] === 'posts' ? routeParts[1] : null),
     profileData: null,
-    profileLoading: false,
+    profileLoading: false, profileLoadingFor: null, profileRequest: 0,
     profileError: '',
     profileLoadedFor: null,
     blockedUsers: [], safetyLoadedFor: null, reportedMessages: [],
@@ -247,7 +260,8 @@ const state = {
     groupChatLoading: false,
     groupChatTimer: null,
     rankings: null,
-    rankingsLoaded: false,
+    rankingsLoaded: false, rankingsLoading: false, rankingsError: '',
+    pendingLaunchVotes: new Set(),
     messagePeer: null,
     messages: [],
     messagesLoading: false,
@@ -255,6 +269,7 @@ const state = {
     friendRequestsLoaded: false,
     posts: (apiEnabled ? [] : (storedPosts || seedPosts)).filter(post => post.type !== 'model').map(normalizePost),
     feedLoaded: !apiEnabled, feedLoading: false, feedError: '',
+    postRequests: new Set(), postLoading: new Set(),
     catalogue: apiEnabled ? [] : readStorage('vibedock-preview-models', DEMO_MODELS),
     catalogueLoaded: !apiEnabled, catalogueLoading: false, catalogueError: '',
     modelQuery: '', ratingPending: null, editingModel: null,
@@ -455,9 +470,9 @@ function renderHero() {
             <div class="hero-copy">
 
                 <h1 id="hero-title">Big ideas.<br>Better <span>together.</span></h1>
-                <p>Build. Share. Find your people.</p>
+                <p>Vibe-code something worth sharing.</p>
                 <div class="hero-actions">
-                    <button class="btn btn-primary" ${state.currentUser ? 'data-action="open-compose" data-type="discussion"' : 'data-action="open-auth" data-mode="register"'}>${state.currentUser ? 'Share a build' : 'Join the community'} ${icon('arrow_forward', 19)}</button>
+                    <button class="btn btn-primary" ${state.currentUser ? 'data-action="open-compose" data-type="launch"' : 'data-action="open-auth" data-mode="register"'}>${state.currentUser ? 'Share a build' : 'Join the community'} ${icon('arrow_forward', 19)}</button>
                     <button class="hero-secondary" data-action="go-page" data-page="launches">Explore builds ${icon('arrow_forward', 18)}</button>
                 </div>
             </div>
@@ -471,13 +486,14 @@ function renderHero() {
 
 function renderLanding() {
     return `<main class="landing-page">${renderHero()}
-        <section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
+        <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/models" data-action="go-page" data-page="models">${icon('smart_toy',20)} Find your AI</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
         <section class="feature-grid" aria-label="What you can do on VibeDock">
-            <article class="feature-card feature-launch"><div class="feature-copy"><span class="feature-number">01 / LAUNCH</span><h3>Your side project.<br>Its first supporters.</h3><p>Launch your app or website. Let the community try it.</p><a class="feature-link" href="/launches" data-action="go-page" data-page="launches">Explore launches ${icon('arrow_forward', 18)}</a></div><div class="feature-art launch-scene">${illustration('launch')}<span class="art-pill">${icon('code', 18)} Built by you</span><span class="art-vote">${icon('arrow_upward', 22)} Your next launch</span></div></article>
-            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people.<br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="/avatars/orbit-ollie.svg" alt="Original astronaut character" width="140" height="140" loading="lazy"><img src="/avatars/byte-bard.svg" alt="Original wizard character" width="120" height="120" loading="lazy"><img src="/avatars/disco-duck.svg" alt="Original duck character" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
-            <article class="feature-card feature-models"><div class="feature-copy"><span class="feature-number">03 / COMPARE</span><h3>Find your coding<br>copilot.</h3><p>Real member ratings. An admin-curated AI model catalogue.</p><a class="feature-link" href="/models" data-action="go-page" data-page="models">Compare AI models ${icon('arrow_forward', 18)}</a></div><div class="feature-art model-scene">${illustration('toolkit')}<div class="art-rating" aria-hidden="true">☆ ☆ ☆ ☆ ☆<span>Your experience counts</span></div></div></article>
-            <article class="feature-card feature-feedback"><div class="feature-copy"><span class="feature-number">04 / LEARN</span><h3>Less guesswork.<br>More “aha”.</h3><p>Ask a question, share progress, or poll your fellow makers.</p><a class="feature-link" href="/feed" data-action="go-page" data-page="feed">Join the conversation ${icon('arrow_forward', 18)}</a></div><div class="feature-art feedback-scene">${illustration('maker')}<div class="art-poll"><span>What should I build next?</span><i></i><i></i><i></i></div></div></article>
+            <article class="feature-card feature-launch"><div class="feature-copy"><span class="feature-number">01 / LAUNCH</span><h3>Your side project. <br>Its first supporters.</h3><p>Your vibe-coded app deserves more than a bookmark. Launch it, get feedback, and earn community votes.</p><a class="feature-link" href="/launches" data-action="go-page" data-page="launches">Explore launches ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/launch-studio.svg" alt="An app taking shape in a maker’s launch studio" width="640" height="460" loading="lazy" decoding="async"></div></article>
+            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="/avatars/orbit-ollie.svg" alt="Original astronaut character" width="140" height="140" loading="lazy"><img src="/avatars/byte-bard.svg" alt="Original wizard character" width="120" height="120" loading="lazy"><img src="/avatars/disco-duck.svg" alt="Original duck character" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
+            <article class="feature-card feature-models"><div class="feature-copy"><span class="feature-number">03 / COMPARE</span><h3>Find your coding <br>copilot.</h3><p>Which model is best for vibe coding? Compare member ratings in a catalogue curated by the site team.</p><a class="feature-link" href="/models" data-action="go-page" data-page="models">Compare AI models ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/model-lab.svg" alt="Two original AI characters ready for your rating" width="440" height="340" loading="lazy" decoding="async"></div></article>
+            <article class="feature-card feature-feedback"><div class="feature-copy"><span class="feature-number">04 / LEARN</span><h3>Less guesswork. <br>More “aha”.</h3><p>Show your progress. Ask the tricky question. Run a poll and let real opinions shape your next move.</p><a class="feature-link" href="/feed" data-action="go-page" data-page="feed">Join the conversation ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/feedback-board.svg" alt="An illustrated community poll and conversation bubble" width="440" height="340" loading="lazy" decoding="async"></div></article>
         </section>
+        <section class="landing-journey" aria-labelledby="journey-title"><div class="journey-heading"><span class="section-kicker">FROM “WHAT IF” TO “IT’S LIVE”</span><h2 id="journey-title">An idea is only<br>the beginning.</h2><a class="feature-link" href="/rankings" data-action="go-page" data-page="rankings">See what’s rising ${icon('arrow_forward',18)}</a></div><ol><li><span>01</span><div><h3>Find your starting point</h3><p>Explore community-rated AI models and discover a tool that fits the way you build.</p></div></li><li><span>02</span><div><h3>Make it a conversation</h3><p>Share the messy middle. Questions, posts, and polls turn a solo project into shared progress.</p></div></li><li><span>03</span><div><h3>Give your build a home</h3><p>Launch your website or app. Every upvote and downvote helps the best work get discovered.</p></div></li></ol></section>
         <section class="maker-strip"><div><span class="section-kicker">Different skills. Shared curiosity.</span><h2>There’s room for your kind of clever.</h2></div><div class="landing-skills">${['React','Python','UI design','AI agents','No-code','Mobile apps'].map(skill => `<span>${skillIcon(skill)}<small>${escapeHtml(skill)}</small></span>`).join('')}</div></section>
         <section class="landing-cta">${illustration('build')}<div><h2>Your next idea starts here.</h2><p>Bring your curiosity. We’ll bring the company.</p></div><button class="btn btn-primary" ${state.currentUser ? 'data-action="go-page" data-page="feed"' : 'data-action="open-auth" data-mode="register"'}>${state.currentUser ? 'Explore the feed' : 'Join for free'} ${icon('arrow_forward', 18)}</button></section>
     </main>`;
@@ -637,7 +653,7 @@ function renderPost(post) {
 
 function filteredPosts() {
     let posts = state.posts.filter((post) => !post.isHidden);
-    if (state.initialPostId) posts = posts.filter((post) => post.id === String(state.initialPostId));
+    if (state.initialPostId) return posts.filter((post) => post.id === String(state.initialPostId));
     if (state.filter === 'saved') posts = posts.filter((post) => state.savedIds.includes(post.id));
     else if (state.filter !== 'all') posts = posts.filter((post) => post.type === state.filter);
     if (state.tag) posts = posts.filter((post) => (post.tags || []).some((tag) => tag.toLowerCase() === state.tag.toLowerCase()) || post.category?.toLowerCase() === state.tag.toLowerCase());
@@ -655,8 +671,8 @@ function renderFeed() {
     const posts = filteredPosts();
     const mobileFilter = document.querySelector('[data-feed-filter]');
     if (mobileFilter) mobileFilter.value = state.filter;
-    list.innerHTML = posts.map(renderPost).join('');
-    if (empty) empty.hidden = posts.length > 0;
+    reconcileCards(list, posts, renderPost);
+    if (empty) empty.hidden = posts.length > 0 || state.feedLoading || !state.feedLoaded || state.postLoading.has(String(state.initialPostId)) || Boolean(state.feedError);
     if (clearTag) {
         clearTag.hidden = !state.tag;
         clearTag.innerHTML = state.tag ? `<span>#${escapeHtml(state.tag)}</span><button data-action="clear-filter" aria-label="Clear topic filter">${icon('close', 14)}</button>` : '';
@@ -708,7 +724,7 @@ function renderFeedSection() {
 function renderMain() {
     return `<section class="community-section" id="community">
         <div class="section-shell">
-            <div class="community-heading"><div><span class="section-kicker">Your people. Your progress.</span><h1>Community feed</h1></div></div>${state.feedError ? `<div class="feed-status" role="status">${escapeHtml(state.feedError)} <button data-action="reload-feed">Try again</button></div>` : state.feedLoading ? '<p class="feed-status" role="status">Loading conversations…</p>' : ''}
+            <div class="community-heading"><div><span class="section-kicker">Your people. Your progress.</span><h1>Community feed</h1></div></div>${state.feedError ? `<div class="feed-status" role="status">${escapeHtml(state.feedError)} <button data-action="reload-feed">Try again</button></div>` : (state.feedLoading || !state.feedLoaded || state.postLoading.has(String(state.initialPostId))) ? '<p class="feed-status" role="status">Loading conversations…</p>' : ''}
             <div class="community-grid">${renderLeftRail()}${renderFeedSection()}${renderRightRail()}</div>
         </div>
     </section>`;
@@ -774,7 +790,7 @@ function renderLaunchPage() {
     const launches = state.posts.filter((post) => post.type === 'launch' && !post.isHidden && (!query || `${post.title} ${post.body} ${post.authorName} ${post.category}`.toLowerCase().includes(query)));
     return `<main class="route-main launch-page">
         <section class="page-intro">${illustration('launch', 'page-art')}<div><span class="route-eyebrow">Showcase</span><h1>Launches</h1><p>Projects made by the community.</p></div><button class="btn btn-primary" data-action="open-compose" data-type="launch">${icon('add', 20)} Share a launch</button></section>
-        <section class="launch-grid">${launches.length ? launches.map(renderPost).join('') : `<div class="route-empty compact">${icon('rocket_launch', 30)}<strong>No launches yet</strong><button class="btn btn-outline btn-small" data-action="open-compose" data-type="launch">Share a launch</button></div>`}</section>
+        ${state.feedError ? `<p class="feed-status" role="alert">${escapeHtml(state.feedError)} <button data-action="reload-feed">Try again</button></p>` : ''}<section class="launch-grid">${state.feedLoading || !state.feedLoaded ? '<p class="feed-status" role="status">Loading launches…</p>' : launches.length ? launches.map(renderPost).join('') : `<div class="route-empty compact">${icon('rocket_launch', 30)}<strong>${state.feedError ? 'Launches unavailable' : 'No launches yet'}</strong><button class="btn btn-outline btn-small" data-action="open-compose" data-type="launch">Share a launch</button></div>`}</section>
     </main>`;
 }
 
@@ -793,13 +809,13 @@ function renderModelsPage() {
         <div class="catalogue-toolbar"><label class="catalogue-search">${icon('search', 20)}<input type="search" data-model-search aria-label="Find an AI model" placeholder="Find a model or provider…" value="${escapeHtml(state.modelQuery)}"></label><span>Highest rated first · One rating per member</span></div>
         ${!apiEnabled ? '<p class="preview-note">Demo catalogue. Ratings are saved in this browser only.</p>' : ''}
         ${state.catalogueError ? `<div class="route-empty"><p>${escapeHtml(state.catalogueError)}</p><button class="btn btn-outline" data-action="reload-models">Try again</button></div>` : ''}
-        <div class="catalogue-grid">${state.catalogueLoading ? '<div class="route-loading">Loading catalogue…</div>' : models.map(model => `<article class="catalogue-card"><div class="catalogue-card-top"><span class="catalogue-art">${illustration('toolkit')}</span><span class="catalogue-provider">${escapeHtml(model.provider)}</span></div><h2>${escapeHtml(model.name)}</h2><p>${escapeHtml(model.description)}</p><div class="model-score"><strong>${model.averageRating ? Number(model.averageRating).toFixed(1) : '—'}</strong><span>${model.ratingCount ? `${model.ratingCount} ${model.ratingCount === 1 ? 'rating' : 'ratings'}` : 'Not rated yet'}</span>${model.websiteUrl && safeUrl(model.websiteUrl) ? `<a href="${escapeHtml(safeUrl(model.websiteUrl))}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${escapeHtml(model.name)}">${icon('open_in_new', 20)}</a>` : ''}</div><fieldset class="model-rating"><legend>${model.myRating ? `Your rating: ${model.myRating}/5` : 'How is it for vibe coding?'}</legend><div>${[1,2,3,4,5].map(score => `<button class="rating-star ${score <= (model.myRating || 0) ? 'is-selected' : ''}" data-action="rate-model" data-model-id="${escapeHtml(model.id)}" data-score="${score}" aria-label="Rate ${escapeHtml(model.name)} ${score} out of 5" aria-pressed="${model.myRating === score}" ${state.ratingPending === String(model.id) ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="27" height="27" aria-hidden="true"><path d="m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.4-5.7-3-5.7 3 1.1-6.4L2.8 9.7l6.4-.9Z"/></svg></button>`).join('')}</div></fieldset></article>`).join('')}</div>
-        ${!state.catalogueLoading && !models.length && !state.catalogueError ? `<div class="route-empty">${illustration('toolkit')}<h2>No models here yet</h2><p>${state.modelQuery ? 'Try another search.' : 'An administrator will add the catalogue.'}</p></div>` : ''}
+        <div class="catalogue-grid">${(state.catalogueLoading || !state.catalogueLoaded) ? '<div class="route-loading">Loading catalogue…</div>' : models.map(model => `<article class="catalogue-card"><div class="catalogue-card-top"><span class="catalogue-art">${illustration('toolkit')}</span><span class="catalogue-provider">${escapeHtml(model.provider)}</span></div><h2>${escapeHtml(model.name)}</h2><p>${escapeHtml(model.description)}</p><div class="model-score"><strong>${model.averageRating ? Number(model.averageRating).toFixed(1) : '—'}</strong><span>${model.ratingCount ? `${model.ratingCount} ${model.ratingCount === 1 ? 'rating' : 'ratings'}` : 'Not rated yet'}</span>${model.websiteUrl && safeUrl(model.websiteUrl) ? `<a href="${escapeHtml(safeUrl(model.websiteUrl))}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${escapeHtml(model.name)}">${icon('open_in_new', 20)}</a>` : ''}</div><fieldset class="model-rating"><legend>${model.myRating ? `Your rating: ${model.myRating}/5` : 'How is it for vibe coding?'}</legend><div>${[1,2,3,4,5].map(score => `<button class="rating-star ${score <= (model.myRating || 0) ? 'is-selected' : ''}" data-action="rate-model" data-model-id="${escapeHtml(model.id)}" data-score="${score}" aria-label="Rate ${escapeHtml(model.name)} ${score} out of 5" aria-pressed="${model.myRating === score}" ${state.ratingPending === String(model.id) ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="27" height="27" aria-hidden="true"><path d="m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.4-5.7-3-5.7 3 1.1-6.4L2.8 9.7l6.4-.9Z"/></svg></button>`).join('')}</div></fieldset></article>`).join('')}</div>
+        ${state.catalogueLoaded && !state.catalogueLoading && !models.length && !state.catalogueError ? `<div class="route-empty">${illustration('toolkit')}<h2>No models here yet</h2><p>${state.modelQuery ? 'Try another search.' : 'An administrator will add the catalogue.'}</p></div>` : ''}
     </main>`;
 }
 async function loadCatalogue() {
     if (!apiEnabled || state.catalogueLoading) return;
-    state.catalogueLoading = true; state.catalogueLoaded = true; state.catalogueError = '';
+    state.catalogueLoading = true; state.catalogueLoaded = true; state.catalogueError = ''; renderApp();
     try { state.catalogue = (await apiRequest('/api/models')).data || []; }
     catch (error) { state.catalogueError = error.message; }
     finally { state.catalogueLoading = false; if (state.page === 'models') renderApp(); }
@@ -862,10 +878,10 @@ function renderLeaderRow(user, index) {
 }
 
 function renderRankingsPage() {
-    const rankingData = state.rankings || localRankings();
-    const tools = (rankingData.tools || []).map(normalizePost);
+    const rankingData = state.rankings || (apiEnabled ? {tools: [], leaderboard: []} : localRankings());
+    const tools = (rankingData.tools || []).map(normalizePost).sort((a,b) => (b.upvotes-b.downvotes)-(a.upvotes-a.downvotes));
     const makers = rankingData.leaderboard || [];
-    return `<main class="route-main rankings-page"><section class="page-intro">${illustration('launch', 'page-art')}<div><span class="route-eyebrow">Rankings</span><h1>What makers are building</h1><p>Discover the builds and people moving the community forward.</p></div></section><div class="rankings-grid"><section class="ranking-panel"><header><span class="ranking-panel-icon">${icon('rocket_launch', 22)}</span><div><h2>Apps & websites</h2><p>All-time upvotes minus downvotes</p></div></header><div class="ranking-list">${tools.length ? tools.map(renderRankedLaunch).join('') : `<div class="route-empty compact"><strong>No launches yet</strong></div>`}</div></section><section class="ranking-panel"><header><span class="ranking-panel-icon">${icon('group', 22)}</span><div><h2>Engagement leaders</h2><p>Last 30 days</p></div></header><div class="ranking-list">${makers.length ? makers.map(renderLeaderRow).join('') : `<div class="route-empty compact"><strong>No makers ranked yet</strong></div>`}</div></section></div></main>`;
+    return `<main class="route-main rankings-page"><section class="page-intro">${illustration('launch', 'page-art')}<div><span class="route-eyebrow">Rankings</span><h1>What makers are building</h1><p>Discover the builds and people moving the community forward.</p></div></section>${state.rankingsError ? `<div class="feed-status" role="alert">${escapeHtml(state.rankingsError)} <button data-action="reload-rankings">Try again</button></div>` : ''}${state.rankingsLoading || !state.rankingsLoaded ? '<p class="feed-status" role="status">Loading rankings…</p>' : ''}<div class="rankings-grid" ${state.rankingsLoading ? 'aria-busy="true"' : ''}><section class="ranking-panel"><header><span class="ranking-panel-icon">${icon('rocket_launch', 22)}</span><div><h2>Apps & websites</h2><p>All-time upvotes minus downvotes</p></div></header><div class="ranking-list">${tools.length ? tools.map(renderRankedLaunch).join('') : `<div class="route-empty compact"><strong>${state.rankingsLoading || !state.rankingsLoaded ? 'Fetching launches…' : state.rankingsError ? 'Rankings unavailable' : 'No launches yet'}</strong></div>`}</div></section><section class="ranking-panel"><header><span class="ranking-panel-icon">${icon('group', 22)}</span><div><h2>Engagement leaders</h2><p>${apiEnabled ? 'Last 30 days' : 'Demo activity · this browser'}</p></div></header><div class="ranking-list">${makers.length ? makers.map(renderLeaderRow).join('') : `<div class="route-empty compact"><strong>${state.rankingsLoading || !state.rankingsLoaded ? 'Fetching makers…' : state.rankingsError ? 'Rankings unavailable' : 'No makers ranked yet'}</strong></div>`}</div></section></div><details class="ranking-method"><summary>How the rankings work</summary><p>Launches are ranked by upvotes minus downvotes. Each member has one vote per launch: click again to remove it, or switch direction.</p><p>Engagement score = posts + (likes received × 2) + (comments received × 3) + comments written. Production uses the last 30 days and excludes hidden posts and inactive accounts. Demo scores reflect sample activity, not live community data.</p></details></main>`;
 }
 
 const infoContent = {
@@ -1069,6 +1085,16 @@ function renderAuthModal() {
     </section></div>`;
 }
 
+function uploadField(name, title) {
+    const logo = name === 'logo';
+    const limit = apiEnabled ? (logo ? '2 MB' : '5 MB') : '1.2 MB in this preview';
+    return renderUploadField({name, title,
+        accept: logo ? '.svg,image/svg+xml,image/png,image/jpeg,image/webp' : 'image/png,image/jpeg,image/webp',
+        hint: `${logo ? 'SVG, ' : ''}PNG, JPEG or WebP · Up to ${limit}`,
+        icon: icon(logo ? 'rocket_launch' : 'image', 24),
+    });
+}
+
 function renderComposeModal() {
     const type = state.composeType;
     const titles = {discussion:'Share a post', question:'Ask a question', poll:'Create a poll', launch:'Launch your project'};
@@ -1078,7 +1104,7 @@ function renderComposeModal() {
         ${type!=='discussion'?`<label class="field-label">${type==='launch'?'Project name':type==='poll'?'Poll question':'Your question'}<input name="title" maxlength="140" required></label>`:''}
         <label class="field-label">${type==='launch'?'Project description':type==='poll'?'Context (optional)':'Your post'}<textarea name="body" rows="4" maxlength="5000" ${type!=='poll'?'required':''} placeholder="${type==='launch'?'What did you build, and who is it for?':'What would you like to share?'}"></textarea></label>
         ${type==='poll'?`<div class="poll-option-fields">${[1,2].map(i=>`<label class="field-label">Option ${i}<input name="options[]" maxlength="80" required></label>`).join('')}</div><button class="add-option" type="button" data-action="add-option">${icon('add',16)} Add option</button>`:''}
-        ${type==='launch'?`<label class="field-label">Project URL<input type="url" name="project_url" required placeholder="https://your-project.com"></label><label class="field-label">Project type<select name="launch_category"><option value="website">Website</option><option value="app">App</option><option value="ai_tool">AI tool</option><option value="ai_app">AI app</option><option value="other">Other</option></select></label><label class="field-label">SEO description <small>A short search preview, up to 160 characters.</small><textarea name="seo_description" rows="2" maxlength="160" placeholder="Describe your project in one useful sentence."></textarea></label><label class="field-label">Project logo<input type="file" name="logo" accept=".svg,image/svg+xml,image/png,image/jpeg,image/webp"></label>`:`<label class="field-label">Image (optional)<input type="file" name="image" accept="image/png,image/jpeg,image/webp"></label><label class="field-label">Topic<select name="category"><option value="">None</option>${popularTopics.map(topic=>`<option>${escapeHtml(topic)}</option>`).join('')}</select></label>`}
+        ${type==='launch'?`<label class="field-label">Project URL<input type="url" name="project_url" required placeholder="https://your-project.com"></label><label class="field-label">Project type<select name="launch_category"><option value="website">Website</option><option value="app">App</option><option value="ai_tool">AI tool</option><option value="ai_app">AI app</option><option value="other">Other</option></select></label><label class="field-label">SEO description <small>A short search preview, up to 160 characters.</small><textarea name="seo_description" rows="2" maxlength="160" placeholder="Describe your project in one useful sentence."></textarea></label>${uploadField('logo', 'Project logo')}`:`${uploadField('image', 'Image (optional)')}<label class="field-label">Topic<select name="category"><option value="">None</option>${popularTopics.map(topic=>`<option>${escapeHtml(topic)}</option>`).join('')}</select></label>`}
         <div class="form-message" data-form-message hidden></div><div class="compose-submit-row"><button class="btn btn-primary" type="submit">${type==='launch'?'Publish launch':type==='poll'?'Publish poll':'Publish post'}</button></div>
     </form></section></div>`;
 }
@@ -1088,7 +1114,7 @@ function renderProfileEditPage() {
     return `<main class="route-main profile-edit-page"><header class="settings-heading"><div><span class="section-kicker">Make yourself at home</span><h1>Your profile, your personality.</h1></div><button class="btn btn-outline" data-action="open-my-profile">View profile ${icon('arrow_forward',18)}</button></header>
     <form data-form="profile" class="profile-settings-form"><aside class="settings-preview"><div class="profile-preview-cover cover-${escapeHtml(user.coverChoice||'aurora')}"></div><img class="settings-avatar" src="${escapeHtml(safeImageUrl(user.avatarUrl)||'/avatars/orbit-ollie.svg')}" alt="Your selected avatar" width="112" height="112"><h2 data-profile-name>${escapeHtml(user.name)}</h2><p>@${escapeHtml(user.username)}</p><div class="settings-section-links"><a href="#profile-basics">The basics</a><a href="#profile-style">Your look</a><a href="#profile-skills">Your skills</a></div><button type="submit" class="btn btn-primary">Save changes ${icon('check',18)}</button></aside>
     <div class="settings-fields"><section id="profile-basics" class="settings-panel"><div class="settings-panel-heading">${illustration('maker')}<div><h2>The basics</h2><p>Let fellow makers get to know you.</p></div></div><div class="settings-two-col"><label class="field-label">Name<input name="name" value="${escapeHtml(user.name)}" maxlength="80" minlength="2" required></label><label class="field-label">Username<input name="username" value="${escapeHtml(user.username)}" pattern="[A-Za-z0-9_]+" minlength="3" maxlength="24" required></label></div><label class="field-label">What do you do?<input name="profession" value="${escapeHtml(user.profession||'')}" maxlength="80" placeholder="Designer, developer, curious human…"></label><label class="field-label">About you<textarea name="bio" rows="3" maxlength="280">${escapeHtml(user.bio||'')}</textarea></label><label class="field-label">Website<input name="website" type="url" value="${escapeHtml(user.website||'')}" placeholder="https://"></label></section>
-    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>A little character</h2><p>Original characters. Entirely your choice.</p></div></div>${renderAvatarPicker(user)}<label class="field-label">Or upload a photo<input type="file" name="avatar" accept="image/png,image/jpeg,image/webp"></label>${renderCoverPicker(user)}</section>
+    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>A little character</h2><p>Original characters. Entirely your choice.</p></div></div>${renderAvatarPicker(user)}${uploadField('avatar', 'Or upload your own photo')}${renderCoverPicker(user)}</section>
     <section id="profile-skills" class="settings-panel"><div class="settings-panel-heading">${illustration('build')}<div><h2>What’s in your toolkit?</h2><p>Choose up to 12 skills. Add your own, too.</p></div></div><label class="field-label">Selected skills<input name="skills" maxlength="420" value="${escapeHtml((user.skills||[]).join(', '))}" placeholder="Add custom skills, separated by commas"></label>${renderSkillPicker(user.skills||[])}</section><div class="settings-save"><div class="form-message" data-form-message hidden></div><button type="submit" class="btn btn-primary">Save changes</button></div></div></form></main>`;
 }
 
@@ -1098,13 +1124,14 @@ function renderAvatarPicker(user) {
     return `<fieldset class="avatar-picker"><legend>Avatar</legend>
         ${user.avatarUploaded || !AVATAR_CHOICES.some(choice => choice.key === selected) ? `<label class="avatar-current-choice"><input type="radio" name="avatar_choice" value="keep" ${selected === 'keep' ? 'checked' : ''}>${avatar(user.name || 'You', 'tone-neutral', 'avatar-choice-preview', user.avatarUrl)}<span>Keep current avatar</span></label>` : ''}
         <div class="avatar-picker-tools"><button type="button" class="btn btn-outline btn-small" data-action="random-avatar">${icon('shuffle', 16)} Random</button></div>
-        ${groups.map((group) => `<div class="avatar-choice-group"><span>${group}</span><div class="avatar-choice-grid">${AVATAR_CHOICES.filter((choice) => choice.group === group).map((choice) => `<label class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}><img src="/avatars/${choice.key}.svg" alt="${choice.label}" loading="lazy"><span>${choice.label}</span></label>`).join('')}</div></div>`).join('')}
+        ${groups.map((group) => `<div class="avatar-choice-group"><span>${group}</span><div class="avatar-choice-grid" id="avatar-cast">${AVATAR_CHOICES.filter((choice) => choice.group === group).map((choice, index) => `<label ${index >= 8 && selected !== choice.key ? 'hidden' : ''} data-avatar-index="${index}" class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}><img src="/avatars/${choice.key}.svg" alt="${choice.label}" loading="lazy"><span>${choice.label}</span></label>`).join('')}</div></div>`).join('')}
+        <button type="button" class="picker-expand" data-action="expand-avatars" aria-expanded="false" aria-controls="avatar-cast">Meet all ${AVATAR_CHOICES.length} characters ${icon('expand_more',18)}</button>
     </fieldset>`;
 }
 
 function renderCoverPicker(user) {
     const selected = user.coverChoice || 'aurora';
-    return `<fieldset class="cover-picker"><legend>Cover</legend><div class="cover-choice-grid">${COVER_CHOICES.map((choice) => `<label class="cover-choice cover-swatch-${choice.key} ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="cover_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}><span class="visually-hidden">${choice.label}</span>${selected === choice.key ? icon('check', 18) : ''}</label>`).join('')}</div></fieldset>`;
+    return `<fieldset class="cover-picker"><legend>Cover</legend><div class="cover-choice-grid">${COVER_CHOICES.map((choice) => `<label class="cover-choice cover-swatch-${choice.key} ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="cover_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}>${icon('check', 18)}<span class="cover-name">${choice.label}</span></label>`).join('')}</div></fieldset>`;
 }
 
 function syncSkillPicker(form) {
@@ -1115,7 +1142,7 @@ function syncSkillPicker(form) {
 
 function renderSkillPicker(selected) {
     const chosen = selected.map(name => name.toLowerCase());
-    return `<fieldset class="skill-picker"><legend>Find your skills</legend><label class="visually-hidden" for="skill-search">Search skills</label><input id="skill-search" type="search" data-skill-search placeholder="Search ${SKILLS.length} skills…" autocomplete="off"><div class="skill-catalog">${SKILLS.map(skill => `<button type="button" class="skill-option" data-action="toggle-skill" data-skill="${escapeHtml(skill.name)}" aria-pressed="${chosen.includes(skill.name.toLowerCase())}">${skillIcon(skill.name)}<span>${escapeHtml(skill.name)}</span>${icon('check', 14, 'skill-check')}</button>`).join('')}</div><p class="skill-status" role="status">${selected.length}/12 selected</p></fieldset>`;
+    return `<fieldset class="skill-picker"><legend>Find your skills</legend><label class="visually-hidden" for="skill-search">Search skills</label><input id="skill-search" type="search" data-skill-search placeholder="Search ${SKILLS.length} skills…" autocomplete="off"><div class="skill-catalog" id="skill-catalog">${SKILLS.map((skill, index) => `<button ${index >= 16 && !chosen.includes(skill.name.toLowerCase()) ? 'hidden' : ''} data-skill-index="${index}" type="button" class="skill-option" data-action="toggle-skill" data-skill="${escapeHtml(skill.name)}" aria-pressed="${chosen.includes(skill.name.toLowerCase())}">${skillIcon(skill.name)}<span>${escapeHtml(skill.name)}</span>${icon('check', 14, 'skill-check')}</button>`).join('')}</div><button class="picker-expand" type="button" data-action="expand-skills" aria-expanded="false" aria-controls="skill-catalog">Browse all ${SKILLS.length} skills ${icon('expand_more',18)}</button><p class="skill-empty" hidden>No matching skills. You can add a custom skill above.</p><p class="skill-status" role="status">${selected.length}/12 selected</p></fieldset>`;
 }
 
 function renderReportModal() {
@@ -1153,32 +1180,34 @@ function patchRegion(id, html) {
     el.innerHTML = html; renderedRegions.set(id, html); return true;
 }
 
-function renderApp() {
+function renderApp({ updatePage = true } = {}) {
     if (!root) return;
     if (!document.querySelector('#page-content')) root.innerHTML = '<div id="header-region"></div><div id="page-content"></div><div id="footer-region"></div><div id="navigation-region"></div><div id="modal-region"></div>';
     patchRegion('header-region', renderHeader());
-    if (!(state.page === 'profile-edit' && renderedPage === 'profile-edit' && document.querySelector('.profile-settings-form'))) patchRegion('page-content', renderPageContent());
+    if (updatePage && !(state.page === 'profile-edit' && renderedPage === 'profile-edit' && document.querySelector('.profile-settings-form'))) patchRegion('page-content', renderPageContent());
     renderedPage = state.page;
     patchRegion('footer-region', ['messages', 'community-chat', 'profile-edit'].includes(state.page) ? '' : renderFooter());
     patchRegion('navigation-region', renderMobileNav());
     const modalChanged = patchRegion('modal-region', renderModal());
-    if (state.page === 'feed') renderFeed();
-    const title = ({ home: 'Build together', feed: 'Community feed', 'profile-edit': 'Edit profile', models: 'AI models', launches: 'Launches', rankings: 'Rankings', 'community-chat': 'Community chat', messages: 'Messages', admin: 'Admin panel', about: 'About', guidelines: 'Guidelines', privacy: 'Privacy', terms: 'Terms', profile: state.profileData?.user?.name || 'Profile' })[state.page] || 'VibeDock';
-    document.title = `${title} | VibeDock`;
+    if (updatePage && state.page === 'feed') {
+        renderFeed();
+        if (apiEnabled && state.initialPostId && !state.posts.some(post => post.id === String(state.initialPostId)) && !state.postRequests.has(String(state.initialPostId))) void loadSinglePost(state.initialPostId);
+    }
+    updateMetadata(state, apiEnabled);
     document.body.classList.toggle('has-modal', Boolean(state.modal));
     if (modalChanged && state.modal === 'auth') {
         window.requestAnimationFrame(() => root.querySelector('.modal-dialog input')?.focus());
     } else if (modalChanged && state.modal) {
         window.requestAnimationFrame(() => root.querySelector('.modal-dialog input, .modal-dialog select, .modal-dialog textarea')?.focus());
     }
-    if (state.page === 'profile' && state.profileUsername && state.profileLoadedFor !== state.profileUsername && !state.profileLoading) {
+    if (state.page === 'profile' && state.profileUsername && state.profileLoadedFor !== state.profileUsername && state.profileLoadingFor !== state.profileUsername) {
         void loadProfile(state.profileUsername);
     }
     if (state.page === 'messages' && !state.conversationsLoaded) {
         void loadConversations();
     }
     if (state.page === 'models' && !state.catalogueLoaded && !state.catalogueLoading) void loadCatalogue();
-    if (['feed','launches','rankings'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
+    if (['feed','launches'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
     if (state.page === 'rankings' && !state.rankingsLoaded) void loadRankings();
     if (state.page === 'community-chat' && state.currentUser && !state.groupChatLoaded && !state.groupChatLoading) void loadCommunityChat();
     if (state.page === 'community-chat') {
@@ -1216,7 +1245,7 @@ function openAuth(mode = 'register') {
     state.modal = 'auth';
     state.authMode = mode;
     state.mobileMenu = false;
-    renderApp();
+    renderApp({ updatePage: false });
 }
 
 function openCompose(type = 'discussion') {
@@ -1226,7 +1255,7 @@ function openCompose(type = 'discussion') {
     }
     state.modal = 'compose';
     state.composeType = ['discussion', 'question', 'poll', 'launch'].includes(type) ? type : 'discussion';
-    renderApp();
+    renderApp({ updatePage: false });
 }
 
 function showMessage(form, message, isError = true) {
@@ -1252,41 +1281,67 @@ async function apiRequest(path, method = 'GET', payload = undefined) {
         }
     }
     const response = await fetch(path, options);
-    const data = response.status === 204 ? {} : await response.json().catch(() => ({}));
+    const data = response.status === 204 ? {} : await response.json().catch(() => {
+        if (response.ok) throw new Error('The server returned an unexpected response. Please reload and try again.');
+        return {};
+    });
     if (!response.ok) {
         const detail = data.errors ? Object.values(data.errors).flat().join(' ') : '';
         const error = new Error(detail || data.message || 'Something went wrong. Please try again.');
         error.status = response.status;
         throw error;
     }
+    if (data.csrfToken) {
+        const token = document.querySelector('meta[name="csrf-token"]');
+        if (token) token.content = data.csrfToken;
+    }
     return data;
+}
+
+async function loadSinglePost(id) {
+    state.postRequests.add(String(id)); state.postLoading.add(String(id)); renderApp();
+    try {
+        const result = await apiRequest(`/api/posts/${encodeURIComponent(id)}`);
+        const post = normalizePost(result.post);
+        if (!state.posts.some(item => item.id === post.id)) state.posts.push(post);
+    } catch (error) {
+        if (state.initialPostId === String(id)) state.feedError = error.status === 404 ? 'This post is no longer available.' : error.message;
+    }
+    state.postLoading.delete(String(id));
+    if (state.initialPostId === String(id)) renderApp();
 }
 
 async function loadServerFeed() {
     if (!apiEnabled || state.feedLoading) return;
-    state.feedLoading = true; state.feedLoaded = true; state.feedError = '';
-    try { state.posts = ((await apiRequest('/api/feed')).data || []).filter(post=>post.type!=='model').map(normalizePost); }
+    state.feedLoading = true; state.feedLoaded = true; state.feedError = ''; renderApp();
+    try {
+        const posts = ((await apiRequest('/api/feed')).data || []).filter(post=>post.type!=='model').map(normalizePost);
+        const linked = state.posts.find(post => post.id === String(state.initialPostId));
+        state.posts = linked && !posts.some(post => post.id === linked.id) ? [...posts, linked] : posts;
+    }
     catch (error) { state.feedError = error.message; }
     finally { state.feedLoading = false; if (['feed','launches','rankings'].includes(state.page)) renderApp(); }
 }
 
 async function loadRankings() {
-    state.rankingsLoaded = true;
+    if (state.rankingsLoading) return;
+    state.rankingsLoaded = true; state.rankingsError = '';
     if (!apiEnabled) {
         state.rankings = null;
         renderApp();
         return;
     }
     try {
+        state.rankingsLoading = true; renderApp();
         const result = await apiRequest('/api/rankings');
         state.rankings = {
             tools: Array.isArray(result.tools) ? result.tools.map(normalizePost) : [],
             leaderboard: Array.isArray(result.leaderboard) ? result.leaderboard : [],
         };
-    } catch {
-        state.rankings = { tools: [], leaderboard: [] };
-    }
-    renderApp();
+    } catch (error) {
+        state.rankingsError = error.message;
+    } finally { state.rankingsLoading = false; }
+    if (state.page === 'rankings') renderApp();
 }
 
 async function loadCommunityChat(isPolling = false) {
@@ -1354,26 +1409,33 @@ function previewProfile(username) {
 }
 
 async function loadProfile(username) {
+    const request = ++state.profileRequest;
     state.profileLoading = true;
+    state.profileLoadingFor = username;
     state.profileError = '';
     renderApp();
     try {
-        if (apiEnabled) {
-            state.profileData = await apiRequest(`/api/users/${encodeURIComponent(username)}`);
-        } else {
-            state.profileData = previewProfile(username);
-            if (!state.profileData) throw new Error('Profile not found.');
-        }
-        if (Array.isArray(state.profileData?.posts)) state.profileData.posts = state.profileData.posts.map(normalizePost);
+        const data = apiEnabled ? await apiRequest(`/api/users/${encodeURIComponent(username)}`) : previewProfile(username);
+        if (request !== state.profileRequest || state.profileUsername !== username) return;
+        if (!data?.user) throw new Error('Profile not found.');
+        state.profileData = data;
+        if (Array.isArray(data.posts)) data.posts = data.posts.map(normalizePost);
         state.profileLoadedFor = username;
-        if (state.profileData?.relationship?.isSelf) await loadFriendRequests();
+        // Requests aren't needed to paint the profile; load them independently.
+        if (data.relationship?.isSelf) void loadFriendRequests().then(() => {
+            if (state.page === 'profile' && state.profileUsername === username) renderApp();
+        });
     } catch (error) {
+        if (request !== state.profileRequest || state.profileUsername !== username) return;
         state.profileData = null;
         state.profileError = error.message;
         state.profileLoadedFor = username;
     } finally {
-        state.profileLoading = false;
-        renderApp();
+        if (request === state.profileRequest) {
+            state.profileLoading = false;
+            state.profileLoadingFor = null;
+            if (state.page === 'profile') renderApp();
+        }
     }
 }
 
@@ -1509,7 +1571,7 @@ function navigateTo(page, username = null) {
     state.modal = null;
     state.initialPostId = null;
     if (nextPage === 'profile') {
-        if (state.profileUsername !== nextUsername) state.profileData = null;
+        if (state.profileUsername !== nextUsername) { state.profileData = null; state.profileLoadedFor = null; }
         state.profileUsername = nextUsername;
     } else {
         state.profileUsername = null;
@@ -1518,7 +1580,7 @@ function navigateTo(page, username = null) {
     const path = nextPage === 'home' ? '/' : nextPage === 'profile-edit' ? '/settings/profile' : nextPage === 'profile' ? `/u/${encodeURIComponent(nextUsername)}` : `/${nextPage}`;
     window.history.pushState({}, '', path);
     renderApp();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
 }
 
 function showToast(message) {
@@ -1533,7 +1595,7 @@ function showToast(message) {
 
 function closeModal() {
     state.modal = null;
-    renderApp();
+    renderApp({ updatePage: false });
 }
 
 function setFilter(filter) {
@@ -1598,10 +1660,12 @@ async function createAuth(form) {
         } else {
             const username = payload.username || payload.name.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
             if (username.length < 3) throw new Error('Choose a username with at least three letters or numbers.');
-            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'neutral', avatarUploaded: false, avatarUrl: '/avatars/neutral.svg', isAdmin: false };
+            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'orbit-ollie', avatarUploaded: false, avatarUrl: '/avatars/orbit-ollie.svg', isAdmin: false };
             writeStorage(STORAGE.user, state.currentUser);
         }
         state.modal = null; state.catalogueLoaded = !apiEnabled;
+        state.feedLoaded = !apiEnabled; state.rankingsLoaded = false; state.rankings = null;
+        state.profileLoadedFor = null;
         persistDemo(); renderApp(); showToast('Welcome!');
     } catch (error) {
         showMessage(form, error.message);
@@ -1644,7 +1708,12 @@ async function createPost(form) {
     submit.disabled = true;
     submit.classList.add('is-loading');
     try {
-        checkMessage([payload.title, payload.body, ...options].filter(Boolean).join(' '));
+        for (const [name, file] of [['image', imageFile], ['logo', logoFile]]) {
+            if (file instanceof File && file.size > 0) { const error = validateUpload(file, name, apiEnabled); if (error) throw new Error(error); }
+        }
+        if (type === 'launch' && !safeUrl(payload.project_url)) throw new Error('Use a valid https:// or http:// project URL.');
+        if (type === 'poll' && (options.length < 2 || new Set(options.map(option => option.toLowerCase())).size !== options.length)) throw new Error('Add at least two different poll options.');
+        checkMessage([payload.title, payload.body, payload.seo_description, ...options].filter(Boolean).join(' '));
         if (apiEnabled) {
             const apiPayload = new FormData();
             Object.entries(payload).filter(([key]) => key !== 'options').forEach(([key, value]) => apiPayload.append(key, value));
@@ -1694,11 +1763,12 @@ async function createPost(form) {
         state.profileUsername = null;
         state.filter = type;
         state.tag = '';
+        state.search = '';
         state.modal = null;
         window.history.pushState({}, '', type === 'launch' ? '/launches' : '/feed');
         persistDemo();
         renderApp();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'instant' });
         showToast(type === 'launch' ? 'Launch published!' : type === 'poll' ? 'Poll posted!' : 'Posted!');
     } catch (error) {
         showMessage(form, error.message);
@@ -1723,7 +1793,7 @@ function refreshPostView() {
         return;
     }
     const main = root.querySelector('.route-main');
-    if (main) main.outerHTML = renderPageContent();
+    if (main) patchRegion('page-content', renderPageContent());
 }
 
 async function vote(postId, optionIndex) {
@@ -1753,10 +1823,11 @@ async function vote(postId, optionIndex) {
 async function voteLaunch(postId, value) {
     if (!state.currentUser) return openAuth('login');
     const voteValue = Number(value);
-    if (![-1, 1].includes(voteValue)) return;
+    if (![-1, 1].includes(voteValue) || state.pendingLaunchVotes.has(String(postId))) return;
     const post = findPostById(postId);
     const rankedPost = state.rankings?.tools?.find((item) => String(item.id) === String(postId));
     if (!post && !rankedPost) return;
+    state.pendingLaunchVotes.add(String(postId));
     try {
         const result = apiEnabled
             ? await apiRequest(`/api/launches/${encodeURIComponent(postId)}/vote`, 'POST', { vote: voteValue })
@@ -1777,7 +1848,7 @@ async function voteLaunch(postId, value) {
         refreshPostView();
     } catch (error) {
         showToast(error.message);
-    }
+    } finally { state.pendingLaunchVotes.delete(String(postId)); }
 }
 
 async function toggleLike(postId) {
@@ -1895,9 +1966,12 @@ async function submitProfile(form) {
     const formData = new FormData(form);
     const avatarFile = formData.get('avatar');
     const hasAvatar = avatarFile instanceof File && avatarFile.size > 0;
-    const submit = form.querySelector('[type="submit"]');
-    submit.disabled = true;
+    if (form.dataset.saving) return;
+    form.dataset.saving = 'true';
+    const buttons = [...form.querySelectorAll('[type="submit"]')];
+    buttons.forEach(button => { button.disabled = true; });
     try {
+        if (hasAvatar) { const error = validateUpload(avatarFile, 'avatar', apiEnabled); if (error) throw new Error(error); }
         const skills = [...new Set(String(formData.get('skills') || '').split(',').map((skill) => skill.trim()).filter(Boolean))];
         if (skills.length > 12) throw new Error('Choose up to twelve skills.');
         if (skills.some(skill => skill.length > 32)) throw new Error('Each skill must be 32 characters or fewer.');
@@ -1949,7 +2023,8 @@ async function submitProfile(form) {
     } catch (error) {
         showMessage(form, error.message);
     } finally {
-        if (submit.isConnected) submit.disabled = false;
+        delete form.dataset.saving;
+        buttons.forEach(button => { button.disabled = false; });
     }
 }
 
@@ -2115,7 +2190,7 @@ async function logout() {
     state.safetyLoadedFor = null;
     state.blockedUsers = []; state.reportedMessages = []; state.messageDrafts = {}; state.chatDraft = '';
     state.messagePeer = null; state.selectedMessageUser = null; state.threadRequest++;
-    state.catalogueLoaded = !apiEnabled;
+    state.catalogueLoaded = !apiEnabled; state.feedLoaded = !apiEnabled; state.rankingsLoaded = false; state.rankings = null;
     state.currentUser = null;
     state.commentingId = null;
     state.conversations = [];
@@ -2206,8 +2281,33 @@ root.addEventListener('click', async (event) => {
         input.value = skills.join(', '); syncSkillPicker(form); return;
     }
     if (action === 'rate-model') return rateModel(target.dataset.modelId, Number(target.dataset.score));
+    if (action === 'clear-upload') {
+        const input = target.closest('[data-upload]').querySelector('input[type="file"]');
+        input.value = ''; syncUpload(input);
+        if (input.name === 'avatar') {
+            const form = input.closest('form');
+            const choice = form.querySelector('[name="avatar_choice"]:checked')?.value;
+            form.querySelector('.settings-avatar').src = !choice || choice === 'keep' ? state.currentUser.avatarUrl : `/avatars/${choice}.svg`;
+        }
+        input.focus();
+        return;
+    }
+    if (action === 'expand-avatars' || action === 'expand-skills') {
+        const expanded = target.getAttribute('aria-expanded') !== 'true';
+        target.setAttribute('aria-expanded', String(expanded));
+        const fieldset = target.closest('fieldset');
+        if (action === 'expand-avatars') {
+            fieldset.querySelectorAll('[data-avatar-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.avatarIndex) >= 8 && !choice.querySelector('input').checked; });
+            target.textContent = expanded ? 'Show fewer characters' : `Meet all ${AVATAR_CHOICES.length} characters`;
+        } else {
+            fieldset.querySelectorAll('[data-skill-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.skillIndex) >= 16 && choice.getAttribute('aria-pressed') !== 'true'; });
+            target.textContent = expanded ? 'Show fewer skills' : `Browse all ${SKILLS.length} skills`;
+        }
+        return;
+    }
+    if (action === 'reload-rankings') return loadRankings();
     if (action === 'reload-models') { state.catalogueLoaded = false; return loadCatalogue(); }
-    if (action === 'reload-feed') { state.feedLoaded = false; return loadServerFeed(); }
+    if (action === 'reload-feed') { state.feedError = ''; if (state.initialPostId) return loadSinglePost(state.initialPostId); state.feedLoaded = false; return loadServerFeed(); }
     if (action === 'edit-catalogue-model' && state.currentUser?.isAdmin && !apiEnabled) { state.editingModel = target.dataset.modelId; renderApp(); return; }
     if (action === 'archive-catalogue-model' && state.currentUser?.isAdmin && !apiEnabled) {
         const model = state.catalogue.find(item=>String(item.id)===target.dataset.modelId);
@@ -2234,10 +2334,10 @@ root.addEventListener('click', async (event) => {
         state.profileUsername = null;
         state.mobileSearch = false;
         state.initialPostId = String(target.dataset.postId || '');
-        state.filter = 'all';
+        state.filter = 'all'; state.tag = '';
         window.history.pushState({}, '', `/posts/${encodeURIComponent(state.initialPostId)}`);
         renderApp();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'instant' });
         return;
     }
     if (action === 'open-my-profile') return navigateTo('profile', state.currentUser?.username);
@@ -2357,7 +2457,9 @@ root.addEventListener('click', async (event) => {
         const input = form.querySelector(`input[name="avatar_choice"][value="${pick}"]`);
         if (input) {
             input.checked = true;
+            input.dispatchEvent(new Event('change', {bubbles:true}));
             form.querySelectorAll('.avatar-choice').forEach((element) => element.classList.toggle('is-selected', element.contains(input)));
+            if (input.closest('.avatar-choice')) input.closest('.avatar-choice').hidden = false;
             input.closest('.avatar-choice')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
         return;
@@ -2390,9 +2492,13 @@ root.addEventListener('click', async (event) => {
 root.addEventListener('input', (event) => {
     if (event.target.matches('[data-model-search]')) {
         state.modelQuery = event.target.value;
-        const cursor = event.target.selectionStart;
-        renderApp();
-        const input = root.querySelector('[data-model-search]'); input?.focus();
+        const template = document.createElement('template');
+        template.innerHTML = renderModelsPage();
+        root.querySelector('.catalogue-grid')?.replaceWith(template.content.querySelector('.catalogue-grid'));
+        root.querySelector('.models-page > .route-empty')?.remove();
+        const empty = template.content.querySelector('.models-page > .route-empty');
+        if (empty) root.querySelector('.models-page').append(empty);
+        renderedRegions.delete('page-content');
         return;
     }
     if (event.target.matches('.profile-settings-form input[name="name"]')) {
@@ -2407,7 +2513,9 @@ root.addEventListener('input', (event) => {
     }
     if (event.target.matches('[data-skill-search]')) {
         const query = event.target.value.trim().toLowerCase();
-        event.target.closest('fieldset').querySelectorAll('[data-skill]').forEach(button => { button.hidden = !button.dataset.skill.toLowerCase().includes(query); });
+        event.target.closest('fieldset').querySelectorAll('[data-skill]').forEach(button => { button.hidden = query ? !button.dataset.skill.toLowerCase().includes(query) : event.target.closest('fieldset').querySelector('[data-action="expand-skills"]').getAttribute('aria-expanded') !== 'true' && Number(button.dataset.skillIndex) >= 16 && button.getAttribute('aria-pressed') !== 'true'; });
+        event.target.closest('fieldset').querySelector('[data-action="expand-skills"]').hidden = Boolean(query);
+        event.target.closest('fieldset').querySelector('.skill-empty').hidden = Boolean(event.target.closest('fieldset').querySelector('[data-skill]:not([hidden])'));
     }
     if (event.target.matches('[name="skills"]')) syncSkillPicker(event.target.closest('form'));
     if (event.target.matches('#community-chat-message')) { showMessageError('community', ''); state.chatDraft = event.target.value; const counter = document.querySelector('[data-chat-count]'); if (counter) counter.textContent = `${state.chatDraft.length}/500`; }
@@ -2431,12 +2539,35 @@ root.addEventListener('change', (event) => {
         state.sort = event.target.value;
         renderFeed();
     }
+    if (event.target.matches('.upload-input')) {
+        const error = validateUpload(event.target.files?.[0], event.target.name, apiEnabled);
+        if (error) { event.target.value = ''; showToast(error); }
+        syncUpload(event.target);
+    }
     if (event.target.matches('input[name="avatar_choice"]')) {
+        const upload = event.target.closest('form').querySelector('[name="avatar"]');
+        if (upload) { upload.value = ''; syncUpload(upload); }
         const image = document.querySelector('.settings-avatar');
         if (image) image.src = event.target.value === 'keep' ? state.currentUser.avatarUrl : `/avatars/${event.target.value}.svg`;
 
         const form = event.target.closest('form');
         if (form) form.querySelectorAll('.avatar-choice').forEach((element) => element.classList.toggle('is-selected', element.contains(event.target)));
+    }
+    if (event.target.matches('input[name="avatar"]')) {
+        const input = event.target;
+        const file = input.files?.[0];
+        if (!file) {
+            const form = input.closest('form');
+            const choice = form.querySelector('[name="avatar_choice"]:checked')?.value;
+            form.querySelector('.settings-avatar').src = !choice || choice === 'keep' ? state.currentUser.avatarUrl : `/avatars/${choice}.svg`;
+            return;
+        }
+        void readFileAsDataUrl(file).then(url => {
+            if (input.isConnected && input.files?.[0] === file) {
+                const image = input.closest('form').querySelector('.settings-avatar');
+                if (image) image.src = url;
+            }
+        }).catch(error => showToast(error.message));
     }
     if (event.target.matches('input[name="cover_choice"]')) {
         const cover = document.querySelector('.profile-preview-cover');
@@ -2514,7 +2645,7 @@ document.addEventListener('click', (event) => {
 });
 
 window.addEventListener('popstate', () => {
-    const parts = decodeURIComponent(window.location.pathname).split('/').filter(Boolean);
+    const parts = parseRoute(window.location.pathname);
     const page = routePages[parts[0]] || 'home';
     if (state.page === 'profile' && page !== 'profile') {
         state.profileData = null;

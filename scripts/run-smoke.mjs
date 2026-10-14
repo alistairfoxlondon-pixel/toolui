@@ -14,4 +14,6 @@ await build({
 });
 await build({ absWorkingDir: fileURLToPath(root), entryPoints: ['scripts/moderation-test.mjs'], bundle: true, format: 'esm', platform: 'node', outfile: '.cache/moderation-test.mjs' });
 await import('../.cache/moderation-test.mjs');
+await import('./performance-test.mjs');
+await import('./regression-test.mjs');
 await import('./smoke-test.mjs');

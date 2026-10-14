@@ -8,6 +8,26 @@ use Illuminate\Support\Facades\Storage;
 
 class PostPresenter
 {
+    /**
+     * Load only the viewer's like membership, not every liker as a User model.
+     * Counts stay database aggregates; original/reposted content gets the same
+     * counts in a batched eager load instead of lazy queries per source post.
+     */
+    public static function relations(?User $viewer): array
+    {
+        $relations = [
+            'author:id,name,username,bio,profession,skills,website,avatar_path,avatar_choice,cover_choice,is_admin',
+            'votes:id,post_id,user_id,option_index',
+            'launchVotes:id,post_id,user_id,vote',
+            'likes' => fn ($query) => $query->select('users.id')->whereKey($viewer?->id ?? 0),
+            'reactions:id,post_id,user_id,reaction',
+        ];
+
+        return array_merge($relations, [
+            'sourcePost' => fn ($query) => $query->with($relations)->withCount(['comments', 'likes', 'reposts']),
+        ]);
+    }
+
     public static function format(Post $post, ?User $viewer, bool $includeSource = true): array
     {
         $options = $post->options ?? [];
