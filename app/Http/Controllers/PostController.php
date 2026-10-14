@@ -81,10 +81,13 @@ class PostController extends Controller
                 : ['nullable', 'array', 'max:8'],
             'options.*' => ['required', 'string', 'distinct:ignore_case', 'max:80'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
+            'brand_slug' => ['nullable', 'prohibited_unless:type,launch', 'string', 'min:3', 'max:40', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', 'unique:brands,slug'],
+            'brand_authorized' => ['exclude_without:brand_slug', 'required', 'accepted'],
             'logo' => ['nullable', 'file', 'mimes:svg,jpg,jpeg,png,webp', 'max:2048'],
         ]);
 
         ContentModeration::check(implode(' ', [$data['title'] ?? '', $data['body'] ?? '', $data['seo_description'] ?? '', ...($data['options'] ?? [])]));
+        $imagePath = null;
         try {
             $imagePath = $request->hasFile('image')
                 ? ImageOptimizer::store($request->file('image'), 'posts', 1600, 82)
@@ -93,23 +96,41 @@ class PostController extends Controller
                 ? ImageOptimizer::store($request->file('logo'), 'launch-logos', 512, 84, true)
                 : null;
         } catch (RuntimeException $error) {
+            if ($imagePath) \Illuminate\Support\Facades\Storage::disk('public')->delete($imagePath);
             $field = $request->hasFile('logo') ? 'logo' : 'image';
             throw ValidationException::withMessages([$field => [$error->getMessage()]]);
         }
 
-        $post = Post::create([
-            'user_id' => $request->user()->id,
-            'type' => $data['type'],
-            'title' => $data['title'] ?? null,
-            'seo_description' => $data['seo_description'] ?? null,
-            'body' => $data['body'] ?? null,
-            'category' => $data['category'] ?? null,
-            'launch_category' => $data['type'] === 'launch' ? ($data['launch_category'] ?? 'other') : null,
-            'project_url' => $data['type'] === 'launch' ? ($data['project_url'] ?? null) : null,
-            'image_path' => $imagePath,
-            'logo_path' => $logoPath,
-            'options' => $data['type'] === 'poll' ? array_values($data['options']) : null,
-        ]);
+        try {
+            $post = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $data, $imagePath, $logoPath) {
+                $post = Post::create([
+                    'user_id' => $request->user()->id,
+                    'type' => $data['type'],
+                    'title' => $data['title'] ?? null,
+                    'seo_description' => $data['seo_description'] ?? null,
+                    'body' => $data['body'] ?? null,
+                    'category' => $data['category'] ?? null,
+                    'launch_category' => $data['type'] === 'launch' ? ($data['launch_category'] ?? 'other') : null,
+                    'project_url' => $data['type'] === 'launch' ? ($data['project_url'] ?? null) : null,
+                    'image_path' => $imagePath,
+                    'logo_path' => $logoPath,
+                    'options' => $data['type'] === 'poll' ? array_values($data['options']) : null,
+                ]);
+
+                if ($data['type'] === 'launch' && !empty($data['brand_slug'])) {
+                    $post->brand()->create(['slug' => $data['brand_slug'], 'user_id' => $request->user()->id]);
+                }
+                return $post;
+            });
+        } catch (\Throwable $error) {
+            foreach ([$imagePath, $logoPath] as $path) {
+                if ($path) \Illuminate\Support\Facades\Storage::disk('public')->delete($path);
+            }
+            if ($error instanceof \Illuminate\Database\UniqueConstraintViolationException) {
+                throw ValidationException::withMessages(['brand_slug' => 'That brand handle has just been claimed. Choose another.']);
+            }
+            throw $error;
+        }
 
         $post->load(PostPresenter::relations($request->user()))->loadCount(['comments', 'likes', 'reposts']);
 
@@ -189,31 +210,28 @@ class PostController extends Controller
     {
         $this->ensureAvailable($post);
         $data = $request->validate([
-            'reaction' => ['required', 'in:celebrate,helpful,support'],
+            'reaction' => ['required', \Illuminate\Validation\Rule::in(PostReaction::types())],
         ]);
 
-        $reaction = PostReaction::query()->where('post_id', $post->id)->where('user_id', $request->user()->id)->first();
-        if ($reaction?->reaction === $data['reaction']) {
-            $reaction->delete();
-            $selected = null;
-        } else {
-            PostReaction::updateOrCreate(
-                ['post_id' => $post->id, 'user_id' => $request->user()->id],
-                ['reaction' => $data['reaction']],
-            );
-            $selected = $data['reaction'];
-        }
-
-        $counts = $post->reactions()->selectRaw('reaction, COUNT(*) as total')->groupBy('reaction')->pluck('total', 'reaction');
-
-        return response()->json([
-            'myReaction' => $selected,
-            'reactions' => [
-                'celebrate' => (int) ($counts['celebrate'] ?? 0),
-                'helpful' => (int) ($counts['helpful'] ?? 0),
-                'support' => (int) ($counts['support'] ?? 0),
-            ],
-        ]);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $post, $data) {
+            // Serialize changes on this post so switching/toggling cannot create duplicates.
+            Post::whereKey($post->id)->lockForUpdate()->firstOrFail();
+            $reaction = PostReaction::query()->where('post_id', $post->id)->where('user_id', $request->user()->id)->first();
+            if ($reaction?->reaction === $data['reaction']) {
+                $reaction->delete();
+                $selected = null;
+            } else {
+                PostReaction::updateOrCreate(
+                    ['post_id' => $post->id, 'user_id' => $request->user()->id],
+                    ['reaction' => $data['reaction']],
+                );
+                $selected = $data['reaction'];
+            }
+            $counts = $post->reactions()->selectRaw('reaction, COUNT(*) as total')->groupBy('reaction')->pluck('total', 'reaction');
+            $totals = array_fill_keys(PostReaction::types(), 0);
+            foreach ($totals as $key => $_) $totals[$key] = (int) ($counts[$key] ?? 0);
+            return response()->json(['myReaction' => $selected, 'reactions' => $totals]);
+        });
     }
 
     public function comment(Request $request, Post $post): JsonResponse

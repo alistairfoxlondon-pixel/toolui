@@ -750,16 +750,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .latest-comment strong { margin-right: 4px; color: var(--on-surface); }
 
 .post-footer { min-height: 48px; border-top: 1px solid var(--border); }
-/* Secondary reactions live in a keyboard-accessible native disclosure. */
+/* Utility actions below the visible reaction bar. */
 .post-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 6px 0; }
-.reaction-picker { position: relative; }
-.reaction-picker > summary { list-style: none; cursor: pointer; }
-.reaction-picker > summary::-webkit-details-marker { display: none; }
-.reaction-picker > summary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-.reaction-options { position: absolute; z-index: 35; bottom: calc(100% + 8px); left: 0; width: 180px; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); box-shadow: var(--shadow-2); }
-.reaction-options .post-action { width: 100%; min-height: 44px; justify-content: flex-start; gap: 10px; }
-.reaction-options .reaction-label { flex: 1; text-align: left; font-size: 12px; }
-.reaction-picker[open] > summary { background: var(--primary-soft); }
 .post-action {
     display: inline-flex;
     align-items: center;

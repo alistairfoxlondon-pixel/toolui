@@ -2,8 +2,12 @@ import '../css/fonts.css';
 import '../css/app.css';
 import '../css/community-features.css';
 import '../css/product-pages.css';
+import '../css/refinements.css';
 import { ICON_PATHS, ICON_PATHS_FILLED } from './icon-paths.js';
 import { checkMessage } from './moderation.js';
+import { avatarAsset, avatarPath, avatarResolutionAttributes } from './avatars.js';
+import REACTIONS from '../data/reactions.json';
+import REACTION_ASSETS from '../data/reaction-assets.json';
 import CHARACTER_AVATARS from '../data/character-avatars.json';
 import { renderUploadField, syncUpload, validateUpload } from './uploads.js';
 import { updateMetadata } from './metadata.js';
@@ -45,6 +49,7 @@ function renderIcon(name, size, className, filled) {
 
 const AVATAR_CHOICES = CHARACTER_AVATARS;
 
+
 const COVER_CHOICES = [
     { key: 'aurora', label: 'Aurora' },
     { key: 'blossom', label: 'Blossom' },
@@ -67,7 +72,7 @@ const seedPosts = [
         title: 'I finally shared my first draft',
         body: 'Posted the rough version instead of polishing forever. The feedback that afternoon was worth it.',
         authorName: 'Maya Chen',
-        author: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/pixel-fox.svg' },
+        author: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/fluent-fox.png' },
         role: 'Product designer',
         tone: 'tone-coral',
         createdAt: '38 min ago',
@@ -84,7 +89,7 @@ const seedPosts = [
         title: 'Goodside, a slower kind of city guide',
         body: 'A small guide to independent places in your neighborhood.',
         authorName: 'Ravi Patel',
-        author: { id: 'demo-ravipatel', name: 'Ravi Patel', username: 'ravipatel', avatarUrl: '/avatars/captain-commit.svg' },
+        author: { id: 'demo-ravipatel', name: 'Ravi Patel', username: 'ravipatel', avatarUrl: '/avatars/fluent-robot.png' },
         role: 'Weekend maker',
         tone: 'tone-mint',
         createdAt: '2 hours ago',
@@ -107,7 +112,7 @@ const seedPosts = [
         title: 'How do you keep an AI-generated codebase maintainable?',
         body: 'I’m trying smaller prompts and tests before each change. What works for you?',
         authorName: 'Priya Rahman',
-        author: { id: 'demo-priyar', name: 'Priya Rahman', username: 'priyar', avatarUrl: '/avatars/byte-bard.svg' },
+        author: { id: 'demo-priyar', name: 'Priya Rahman', username: 'priyar', avatarUrl: '/avatars/fluent-owl.png' },
         role: 'AI engineer',
         tone: 'tone-lilac',
         createdAt: '3 hours ago',
@@ -127,7 +132,7 @@ const seedPosts = [
         title: 'What takes the most energy when you start?',
         body: '',
         authorName: 'Noah Williams',
-        author: { id: 'demo-noahbuilds', name: 'Noah Williams', username: 'noahbuilds', avatarUrl: '/avatars/orbit-ollie.svg' },
+        author: { id: 'demo-noahbuilds', name: 'Noah Williams', username: 'noahbuilds', avatarUrl: '/avatars/fluent-astronaut.png' },
         role: 'Creative technologist',
         tone: 'tone-sky',
         createdAt: '4 hours ago',
@@ -147,7 +152,7 @@ const seedPosts = [
         title: 'One small build, one useful lesson',
         body: 'A smaller scope and a real deadline helped me finish. What helped you ship this week?',
         authorName: 'Ken Alvarez',
-        author: { id: 'demo-kena', name: 'Ken Alvarez', username: 'kenalvarez', avatarUrl: '/avatars/agent-loop.svg' },
+        author: { id: 'demo-kena', name: 'Ken Alvarez', username: 'kenalvarez', avatarUrl: '/avatars/fluent-ninja.png' },
         role: 'Full stack dev',
         tone: 'tone-indigo',
         createdAt: '6 hours ago',
@@ -208,7 +213,7 @@ function normalizePost(post) {
         launchVote: post.launchVote ?? post.launch_vote ?? null,
         likes: Number(post.likes ?? post.likes_count ?? 0),
         liked: Boolean(post.liked),
-        reactions: post.reactions || { celebrate: 0, helpful: 0, support: 0 },
+        reactions: {...Object.fromEntries(REACTIONS.map(item=>[item.key,0])), ...(post.reactions || {})},
         myReaction: post.myReaction || null,
         repostsCount: Number(post.repostsCount ?? post.reposts_count ?? 0),
         sourcePost: post.sourcePost ? normalizePost({ ...post.sourcePost, sourcePost: null }) : null,
@@ -220,29 +225,25 @@ function normalizePost(post) {
     };
 }
 
-const DEMO_MODELS = [
-    {id:'claude', name:'Claude', provider:'Anthropic', description:'Rate your experience building and debugging with Claude.', websiteUrl:'https://claude.ai', isActive:true},
-    {id:'gpt', name:'GPT', provider:'OpenAI', description:'Rate your experience turning prompts into working apps with GPT.', websiteUrl:'https://chatgpt.com', isActive:true},
-    {id:'gemini', name:'Gemini', provider:'Google', description:'Rate your experience planning, coding, and iterating with Gemini.', websiteUrl:'https://gemini.google.com', isActive:true},
-    {id:'deepseek', name:'DeepSeek', provider:'DeepSeek', description:'Rate your hands-on coding experience with DeepSeek.', websiteUrl:'https://www.deepseek.com', isActive:true},
-];
-
 const storedUser = apiEnabled ? null : readStorage(STORAGE.user);
 const storedPosts = apiEnabled ? null : readStorage(STORAGE.posts);
 const routeParts = parseRoute(window.location.pathname);
 const routePages = {
-    feed: 'feed', posts: 'feed', settings: 'profile-edit',
-    launches: 'launches', models: 'models', rankings: 'rankings', 'community-chat': 'community-chat',
+    feed: 'feed', posts: 'feed', brands: 'feed', settings: 'profile-edit',
+    launches: 'launches', models: 'polls', polls: 'polls', badges: 'badges', help: 'help', rankings: 'rankings', 'community-chat': 'community-chat',
     messages: 'messages', about: 'about', guidelines: 'guidelines', privacy: 'privacy',
     terms: 'terms', admin: 'admin', u: 'profile',
 };
-const pathPage = routePages[routeParts[0]] || 'home';
+const creationPages = ['create-post', 'create-question', 'create-poll', 'create-launch'];
+function pageForRoute(parts) { return parts[0] === 'create' && creationPages.includes(`create-${parts[1]}`) ? `create-${parts[1]}` : routePages[parts[0]] || 'home'; }
+const pathPage = pageForRoute(routeParts);
+if (routeParts[0] === 'models') window.history.replaceState({}, '', '/polls');
 
 const state = {
     currentUser: config.currentUser || storedUser || null,
     page: config.initialPage || pathPage,
     profileUsername: config.profileUsername || (pathPage === 'profile' ? routeParts[1] : null),
-    initialPostId: config.initialPostId || (routeParts[0] === 'posts' ? routeParts[1] : null),
+    initialPostId: config.initialPostId || (routeParts[0] === 'posts' ? routeParts[1] : routeParts[0] === 'brands' ? (storedPosts || []).find(post=>post.brand?.slug===routeParts[1])?.id : null),
     profileData: null,
     profileLoading: false, profileLoadingFor: null, profileRequest: 0,
     profileError: '',
@@ -255,13 +256,15 @@ const state = {
     conversations: [],
     conversationsLoaded: false,
     selectedMessageUser: null,
-    groupMessages: apiEnabled ? [] : readStorage('vibedock-preview-chat', [{ id: 1, body: 'Welcome to the community chat.', sentByMe: false, createdAt: 'today', user: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/female-rose.svg' } }]),
+    groupMessages: apiEnabled ? [] : readStorage('vibedock-preview-chat', [{ id: 1, body: 'Welcome to the community chat.', sentByMe: false, createdAt: 'today', user: { id: 'demo-mayachen', name: 'Maya Chen', username: 'mayachen', avatarUrl: '/avatars/fluent-unicorn.png' } }]),
     groupChatLoaded: false,
     groupChatLoading: false,
     groupChatTimer: null,
     rankings: null,
     rankingsLoaded: false, rankingsLoading: false, rankingsError: '',
     pendingLaunchVotes: new Set(),
+    pendingReactions: new Set(),
+    pendingLikes: new Set(),
     messagePeer: null,
     messages: [],
     messagesLoading: false,
@@ -270,9 +273,6 @@ const state = {
     posts: (apiEnabled ? [] : (storedPosts || seedPosts)).filter(post => post.type !== 'model').map(normalizePost),
     feedLoaded: !apiEnabled, feedLoading: false, feedError: '',
     postRequests: new Set(), postLoading: new Set(),
-    catalogue: apiEnabled ? [] : readStorage('vibedock-preview-models', DEMO_MODELS),
-    catalogueLoaded: !apiEnabled, catalogueLoading: false, catalogueError: '',
-    modelQuery: '', ratingPending: null, editingModel: null,
     savedIds: (readStorage('vibedock-preview-saved', []) || []).map(String),
     menuPostId: null,
     filter: 'all',
@@ -283,10 +283,9 @@ const state = {
     searchTimer: null,
     tag: '',
     sort: 'newest',
-    modal: config.initialAuthMode ? 'auth' : null,
-    authMode: config.initialAuthMode || 'register',
+    modal: config.initialAuthMode || ['login', 'register'].includes(routeParts[0]) ? 'auth' : null,
+    authMode: config.initialAuthMode || (routeParts[0] === 'login' ? 'login' : 'register'),
     flashMessage: config.flashMessage || '',
-    composeType: 'discussion',
     reportPostId: null,
     mobileMenu: false,
     commentingId: null,
@@ -312,6 +311,8 @@ function safeUrl(value) {
 }
 
 function safeImageUrl(value) {
+    const asset = avatarAsset(value);
+    if (asset) return asset.small;
     const url = safeUrl(value);
     if (url) return url;
     if (typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')) {
@@ -331,8 +332,10 @@ function toneFor(name = '') {
 }
 
 function avatar(name, tone = toneFor(name), extraClass = '', imageUrl = null) {
-    const safeImage = imageUrl ? safeImageUrl(imageUrl) : '';
-    return `<span class="avatar ${tone} ${extraClass}" aria-hidden="true">${safeImage ? `<img src="${escapeHtml(safeImage)}" alt="" loading="lazy">` : escapeHtml(initials(name))}</span>`;
+    const safeImage = imageUrl ? safeImageUrl(imageUrl) : avatarPath(AVATAR_CHOICES[[...name].reduce((n,c) => n+c.charCodeAt(0),0) % AVATAR_CHOICES.length].key);
+    const pixels = extraClass.includes('hero') ? 112 : extraClass.includes('small') || extraClass.includes('mini') ? 32 : 40;
+    const eager = extraClass.includes('small') || extraClass.includes('hero');
+    return `<span class="avatar ${tone} ${extraClass}" aria-hidden="true">${safeImage ? `<img src="${escapeHtml(safeImage)}" alt="" ${avatarResolutionAttributes(safeImage, pixels)} loading="${eager ? 'eager' : 'lazy'}" decoding="async" width="${pixels}" height="${pixels}">` : escapeHtml(initials(name))}</span>`;
 }
 
 function prettyType(type) {
@@ -438,7 +441,7 @@ function renderHeader() {
     const pages = [
         ['home', 'home', 'Home'],
         ['feed', 'forum', 'Feed'],
-        ['models', 'smart_toy', 'AI models'],
+        ['polls', 'bar_chart', 'Polls'],
         ['launches', 'rocket_launch', 'Launches'],
         ['rankings', 'monitoring', 'Rankings'],
         ['community-chat', 'group', 'Chat'],
@@ -486,14 +489,14 @@ function renderHero() {
 
 function renderLanding() {
     return `<main class="landing-page">${renderHero()}
-        <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/models" data-action="go-page" data-page="models">${icon('smart_toy',20)} Find your AI</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
+        <div class="landing-paths" aria-label="Your next step"><a href="/launches" data-action="go-page" data-page="launches">${icon('rocket_launch',20)} Ship your idea</a><span></span><a href="/polls" data-action="go-page" data-page="polls">${icon('bar_chart',20)} Ask the community</a><span></span><a href="/feed" data-action="go-page" data-page="feed">${icon('forum',20)} Build with people</a></div><section class="landing-intro"><span class="section-kicker">A little less solo. A lot more possibility.</span><h2>Make something.<br>Make it <span>together.</span></h2></section>
         <section class="feature-grid" aria-label="What you can do on VibeDock">
-            <article class="feature-card feature-launch"><div class="feature-copy"><span class="feature-number">01 / LAUNCH</span><h3>Your side project. <br>Its first supporters.</h3><p>Your vibe-coded app deserves more than a bookmark. Launch it, get feedback, and earn community votes.</p><a class="feature-link" href="/launches" data-action="go-page" data-page="launches">Explore launches ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/launch-studio.svg" alt="An app taking shape in a maker’s launch studio" width="640" height="460" loading="lazy" decoding="async"></div></article>
-            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="/avatars/orbit-ollie.svg" alt="Original astronaut character" width="140" height="140" loading="lazy"><img src="/avatars/byte-bard.svg" alt="Original wizard character" width="120" height="120" loading="lazy"><img src="/avatars/disco-duck.svg" alt="Original duck character" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
-            <article class="feature-card feature-models"><div class="feature-copy"><span class="feature-number">03 / COMPARE</span><h3>Find your coding <br>copilot.</h3><p>Which model is best for vibe coding? Compare member ratings in a catalogue curated by the site team.</p><a class="feature-link" href="/models" data-action="go-page" data-page="models">Compare AI models ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/model-lab.svg" alt="Two original AI characters ready for your rating" width="440" height="340" loading="lazy" decoding="async"></div></article>
+            <article class="feature-card feature-launch"><div class="feature-copy"><span class="feature-number">01 / LAUNCH</span><h3>Your side project. <br>Its first supporters.</h3><p>Launch your build. Find its first fans. Claim a home for your brand.</p><a class="feature-link" href="/launches" data-action="go-page" data-page="launches">Explore launches ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/launch-studio.svg" alt="An app taking shape in a maker’s launch studio" width="640" height="460" loading="lazy" decoding="async"></div></article>
+            <article class="feature-card feature-people"><div class="feature-copy"><span class="feature-number">02 / CONNECT</span><h3>Good people. <br>Better conversations.</h3><p>Find a fresh perspective in chat or a private conversation.</p><a class="feature-link" href="/community-chat" data-action="go-page" data-page="community-chat">Meet the community ${icon('arrow_forward', 18)}</a></div><div class="feature-art character-scene"><img src="${avatarPath('fluent-astronaut', 'large')}" alt="3D astronaut avatar" width="140" height="140" loading="lazy"><img src="${avatarPath('fluent-owl', 'large')}" alt="3D owl avatar" width="120" height="120" loading="lazy"><img src="${avatarPath('fluent-cat-face', 'large')}" alt="3D cat avatar" width="100" height="100" loading="lazy">${illustration('conversation')}</div></article>
+            <article class="feature-card feature-badges"><div class="feature-copy"><span class="feature-number">03 / BELONG</span><h3>A little activity.<br>A lot to show.</h3><p>Share, help, and launch. Earn badges along the way.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">Meet your milestones ${icon('arrow_forward',18)}</a></div><div class="feature-art badge-scene"><span class="display-badge">${icon('rocket_launch',48)}</span><span class="display-badge">${icon('favorite',36)}</span><span class="display-badge">${icon('auto_awesome',36)}</span><small>Made of small wins.</small></div></article>
             <article class="feature-card feature-feedback"><div class="feature-copy"><span class="feature-number">04 / LEARN</span><h3>Less guesswork. <br>More “aha”.</h3><p>Show your progress. Ask the tricky question. Run a poll and let real opinions shape your next move.</p><a class="feature-link" href="/feed" data-action="go-page" data-page="feed">Join the conversation ${icon('arrow_forward', 18)}</a></div><div class="feature-art scene-image"><img src="/illustrations/feedback-board.svg" alt="An illustrated community poll and conversation bubble" width="440" height="340" loading="lazy" decoding="async"></div></article>
         </section>
-        <section class="landing-journey" aria-labelledby="journey-title"><div class="journey-heading"><span class="section-kicker">FROM “WHAT IF” TO “IT’S LIVE”</span><h2 id="journey-title">An idea is only<br>the beginning.</h2><a class="feature-link" href="/rankings" data-action="go-page" data-page="rankings">See what’s rising ${icon('arrow_forward',18)}</a></div><ol><li><span>01</span><div><h3>Find your starting point</h3><p>Explore community-rated AI models and discover a tool that fits the way you build.</p></div></li><li><span>02</span><div><h3>Make it a conversation</h3><p>Share the messy middle. Questions, posts, and polls turn a solo project into shared progress.</p></div></li><li><span>03</span><div><h3>Give your build a home</h3><p>Launch your website or app. Every upvote and downvote helps the best work get discovered.</p></div></li></ol></section>
+        <section class="landing-journey" aria-labelledby="journey-title"><div class="journey-heading"><span class="section-kicker">FROM “WHAT IF” TO “IT’S LIVE”</span><h2 id="journey-title">An idea is only<br>the beginning.</h2><a class="feature-link" href="/rankings" data-action="go-page" data-page="rankings">See what’s rising ${icon('arrow_forward',18)}</a></div><ol><li><span>01</span><div><h3>Find your starting point</h3><p>Ask a question or run a poll. Find out what works for other makers.</p></div></li><li><span>02</span><div><h3>Make it a conversation</h3><p>Share progress. Meet people who get what you’re making.</p></div></li><li><span>03</span><div><h3>Give your build a home</h3><p>Launch your project, claim your brand, and gather feedback.</p></div></li></ol></section>
         <section class="maker-strip"><div><span class="section-kicker">Different skills. Shared curiosity.</span><h2>There’s room for your kind of clever.</h2></div><div class="landing-skills">${['React','Python','UI design','AI agents','No-code','Mobile apps'].map(skill => `<span>${skillIcon(skill)}<small>${escapeHtml(skill)}</small></span>`).join('')}</div></section>
         <section class="landing-cta">${illustration('build')}<div><h2>Your next idea starts here.</h2><p>Bring your curiosity. We’ll bring the company.</p></div><button class="btn btn-primary" ${state.currentUser ? 'data-action="go-page" data-page="feed"' : 'data-action="open-auth" data-mode="register"'}>${state.currentUser ? 'Explore the feed' : 'Join for free'} ${icon('arrow_forward', 18)}</button></section>
     </main>`;
@@ -529,7 +532,7 @@ function renderLeftRail() {
 
 function renderComposer() {
     return `<div class="composer-card">
-        <div class="composer-main">${avatar(state.currentUser?.name || 'You', state.currentUser ? toneFor(state.currentUser.name) : 'tone-neutral', 'avatar-composer')}<button class="composer-prompt" data-action="open-compose" data-type="discussion">Share what you're making…</button><button class="composer-open icon-button" aria-label="Start a post" data-action="open-compose" data-type="discussion">${icon('add', 20)}</button></div>
+        <div class="composer-main">${avatar(state.currentUser?.name || 'You', state.currentUser ? toneFor(state.currentUser.name) : 'tone-neutral', 'avatar-composer', state.currentUser?.avatarUrl)}<button class="composer-prompt" data-action="open-compose" data-type="discussion">Share what you're making…</button><button class="composer-open icon-button" aria-label="Start a post" data-action="open-compose" data-type="discussion">${icon('add', 20)}</button></div>
         <div class="composer-divider"></div>
         <div class="composer-shortcuts">
             <button data-action="open-compose" data-type="discussion">${icon('forum', 19)}<span>Post</span></button>
@@ -556,7 +559,7 @@ function renderLaunchPreview(post) {
     const downvotes = Number(post.downvotes || 0);
     return `<div class="launch-preview-card">
         <div class="launch-brand-tile">${logo ? `<img src="${escapeHtml(logo)}" alt="" loading="lazy">` : icon('rocket_launch', 26)}</div>
-        <div class="launch-preview-info"><span class="launch-overline">${escapeHtml(category)}</span><strong>${escapeHtml(domain)}</strong></div>
+        <div class="launch-preview-info"><span class="launch-overline">${escapeHtml(category)}</span><strong>${escapeHtml(domain)}</strong>${post.brand ? `<a class="brand-handle" href="/brands/${encodeURIComponent(post.brand.slug)}" ${!apiEnabled ? `data-action="open-post" data-post-id="${escapeHtml(post.id)}"` : ''}>@${escapeHtml(post.brand.slug)}</a>${post.brand.status === 'verified' ? `<span class="verified-business" title="Brand ownership reviewed by an administrator">${icon('verified',16)} Verified business</span>` : `<small class="brand-review-status">${post.brand.status === 'rejected' ? 'Not verified' : 'Verification pending'}</small>`}` : ''}</div>
         ${safe ? `<a class="launch-open" href="${escapeHtml(safe)}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${escapeHtml(post.title)}">${icon('open_in_new', 19)}</a>` : ''}
         <div class="launch-vote-controls" role="group" aria-label="Vote on ${escapeHtml(post.title)}">
             <button class="launch-vote-button ${post.launchVote === 1 ? 'is-selected' : ''}" data-action="launch-vote" data-post-id="${escapeHtml(post.id)}" data-vote="1" aria-label="Upvote" aria-pressed="${post.launchVote === 1}">${icon('arrow_upward', 18)}<span>${upvotes}</span></button>
@@ -587,7 +590,15 @@ function renderCommentPreview(post) {
 }
 
 function renderCommentForm(post) {
-    return `<form class="comment-form" data-form="comment" data-post-id="${escapeHtml(post.id)}">${avatar(state.currentUser?.name || 'You', toneFor(state.currentUser?.name || 'You'), 'avatar-mini')}<label class="visually-hidden" for="comment-${escapeHtml(post.id)}">Write a reply</label><input id="comment-${escapeHtml(post.id)}" name="body" maxlength="2000" placeholder="Write a reply…" required><button type="submit" aria-label="Post reply">${icon('send', 17)}</button></form>`;
+    return `<form class="comment-form" data-form="comment" data-post-id="${escapeHtml(post.id)}">${avatar(state.currentUser?.name || 'You', toneFor(state.currentUser?.name || 'You'), 'avatar-mini', state.currentUser?.avatarUrl)}<label class="visually-hidden" for="comment-${escapeHtml(post.id)}">Write a reply</label><input id="comment-${escapeHtml(post.id)}" name="body" maxlength="2000" placeholder="Write a reply…" required><button type="submit" aria-label="Post reply">${icon('send', 17)}</button></form>`;
+}
+
+function reactionImage(key) {
+    return `<img class="reaction-art" src="${REACTION_ASSETS[key]}" width="24" height="24" alt="" loading="lazy" decoding="async" aria-hidden="true">`;
+}
+function renderReactions(post) {
+    const counts = post.reactions || {};
+    return `<div class="post-reactions" role="group" aria-label="React to this post"><button class="post-action reaction-action love-reaction ${post.liked ? 'is-liked' : ''}" data-action="like" data-post-id="${escapeHtml(post.id)}" aria-pressed="${Boolean(post.liked)}" aria-label="Love" title="${post.liked ? 'Remove love' : 'Love this post'}">${reactionImage('love')}<span class="reaction-label">Love</span><span class="reaction-count">${Number(post.likes || 0) || ''}</span></button>${REACTIONS.map(({key,label}) => `<button class="post-action reaction-action ${post.myReaction === key ? 'is-selected' : ''}" data-action="react" data-reaction="${key}" data-post-id="${escapeHtml(post.id)}" aria-pressed="${post.myReaction === key}" aria-label="${label}" title="${post.myReaction === key ? 'Remove' : 'React with'} ${label.toLowerCase()}">${reactionImage(key)}<span class="reaction-label">${label}</span><span class="reaction-count">${Number(counts[key] || 0) || ''}</span></button>`).join('')}</div>`;
 }
 
 function renderPost(post) {
@@ -600,7 +611,6 @@ function renderPost(post) {
     const safeProfilePath = authorUsername ? `/u/${encodeURIComponent(authorUsername)}` : '#';
     const comments = Number(actionPost.commentsCount || 0);
     const imageUrl = contentPost.imageUrl ? safeImageUrl(contentPost.imageUrl) : '';
-    const reactions = actionPost.reactions || {};
     const menuOpen = state.menuPostId === post.id;
     const canReport = state.currentUser && String(actionPost.author?.id) !== String(state.currentUser.id);
     const actionMenu = `<div class="post-more-wrap"><button class="post-more icon-button" aria-label="More options" aria-expanded="${menuOpen}" data-action="post-menu" data-post-id="${escapeHtml(post.id)}">${icon('more_horiz', 21)}</button>${menuOpen ? `<div class="post-menu" role="menu"><button role="menuitem" data-action="save-post" data-post-id="${escapeHtml(post.id)}">${icon('bookmark', 17, '', state.savedIds.includes(post.id))} ${state.savedIds.includes(post.id) ? 'Unsave' : 'Save'}</button><button role="menuitem" data-action="share" data-post-id="${escapeHtml(post.id)}">${icon('share', 17)} Copy link</button>${canReport ? `<button role="menuitem" data-action="report-post" data-post-id="${escapeHtml(actionPost.id)}">${icon('flag', 17)} Report</button>` : ''}</div>` : ''}</div>`;
@@ -635,16 +645,11 @@ function renderPost(post) {
         </div>
         ${renderCommentPreview(actionPost)}
         <div class="post-footer">
+            ${renderReactions(actionPost)}
             <div class="post-actions">
-                <button class="post-action ${actionPost.liked ? 'is-liked' : ''}" data-action="like" data-post-id="${escapeHtml(actionPost.id)}" aria-pressed="${actionPost.liked ? 'true' : 'false'}" aria-label="Like">${icon('favorite', 20, '', actionPost.liked)}<span>${Number(actionPost.likes || 0) || ''}</span></button>
-                <details class="reaction-picker"><summary class="post-action" aria-label="Add reaction" title="Add reaction">${icon('add_reaction', 21)}</summary><div class="reaction-options">
-                <button class="post-action reaction-action ${actionPost.myReaction === 'celebrate' ? 'is-selected' : ''}" data-action="react" data-reaction="celebrate" data-post-id="${escapeHtml(actionPost.id)}" aria-pressed="${actionPost.myReaction === 'celebrate'}" aria-label="Celebrate" title="Celebrate">${icon('celebration', 20)}<span class="reaction-label">Celebrate</span><span>${Number(reactions.celebrate || 0) || ''}</span></button>
-                <button class="post-action reaction-action ${actionPost.myReaction === 'helpful' ? 'is-selected' : ''}" data-action="react" data-reaction="helpful" data-post-id="${escapeHtml(actionPost.id)}" aria-pressed="${actionPost.myReaction === 'helpful'}" aria-label="Helpful" title="Helpful">${icon('check_circle', 20, '', actionPost.myReaction === 'helpful')}<span class="reaction-label">Helpful</span><span>${Number(reactions.helpful || 0) || ''}</span></button>
-                <button class="post-action reaction-action ${actionPost.myReaction === 'support' ? 'is-selected' : ''}" data-action="react" data-reaction="support" data-post-id="${escapeHtml(actionPost.id)}" aria-pressed="${actionPost.myReaction === 'support'}" aria-label="Support" title="Support">${icon('group', 20)}<span class="reaction-label">Support</span><span>${Number(reactions.support || 0) || ''}</span></button>
-                </div></details>
-                <button class="post-action" data-action="comment-toggle" data-post-id="${escapeHtml(actionPost.id)}" aria-expanded="${state.commentingId === actionPost.id}" aria-label="Comment">${icon('comment', 20)}<span>${comments || ''}</span></button>
-                <button class="post-action" data-action="repost" data-post-id="${escapeHtml(actionPost.id)}" aria-label="Repost" title="Repost">${icon('repeat', 20)}<span>${Number(actionPost.repostsCount || 0) || ''}</span></button>
-                <button class="post-action share-action" data-action="share" data-post-id="${escapeHtml(post.id)}" aria-label="Share" title="Share">${icon('share', 19)}</button>
+                <button class="post-action" data-action="comment-toggle" data-post-id="${escapeHtml(actionPost.id)}" aria-expanded="${state.commentingId === actionPost.id}" aria-label="Comment">${icon('comment', 20)}<span class="post-utility-label">Reply</span><span>${comments || ''}</span></button>
+                <button class="post-action" data-action="repost" data-post-id="${escapeHtml(actionPost.id)}" aria-label="Repost" title="Repost">${icon('repeat', 20)}<span class="post-utility-label">Repost</span><span>${Number(actionPost.repostsCount || 0) || ''}</span></button>
+                <button class="post-action share-action" data-action="share" data-post-id="${escapeHtml(post.id)}" aria-label="Share" title="Share">${icon('share', 19)}<span class="post-utility-label">Share</span></button>
             </div>
         </div>
         ${state.commentingId === actionPost.id ? renderCommentForm(actionPost) : ''}
@@ -691,8 +696,8 @@ function renderRightRail() {
             <h3>Made something?</h3>
             <button class="btn btn-outline btn-small" data-action="open-compose" data-type="launch">Share your project ${icon('arrow_forward', 17)}</button>
         </div>
-        <button class="rail-card toolkit-card" data-action="go-page" data-page="models">
-            ${illustration('toolkit')}<span>AI toolkit</span>${icon('arrow_forward', 18)}
+        <button class="rail-card toolkit-card" data-action="go-page" data-page="polls">
+            ${illustration('toolkit')}<span>Community polls</span>${icon('arrow_forward', 18)}
         </button>
         <div class="community-note">${icon('group', 22)}<button data-action="go-page" data-page="guidelines">Community guidelines ${icon('arrow_forward', 14)}</button></div>
         <div class="right-footer"><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button><span>© ${new Date().getFullYear()} VibeDock</span></div>
@@ -773,6 +778,7 @@ function renderProfilePage() {
             <div class="profile-detail">
                 <div class="profile-avatar-wrap">${avatar(user.name, toneFor(user.name), 'avatar-profile-hero', user.avatarUrl)}</div>
                 <div class="profile-heading-row"><div><h1>${escapeHtml(user.name)}</h1><span class="profile-handle">@${escapeHtml(user.username)}</span></div><div class="profile-actions">${relationActions}${followButton}</div></div>
+                ${renderMemberBadges(user, profilePosts)}
                 ${user.bio ? `<p class="profile-bio">${escapeHtml(user.bio)}</p>` : ''}
                 ${user.profession ? `<p class="profile-profession">${icon('person', 17)} ${escapeHtml(user.profession)}</p>` : ''}
                 ${safeWebsite ? `<div class="profile-meta"><a href="${escapeHtml(safeWebsite)}" target="_blank" rel="noopener noreferrer">${icon('language', 17)} ${escapeHtml(new URL(safeWebsite).hostname.replace(/^www\./, ''))}</a></div>` : ''}
@@ -792,54 +798,6 @@ function renderLaunchPage() {
         <section class="page-intro">${illustration('launch', 'page-art')}<div><span class="route-eyebrow">Showcase</span><h1>Launches</h1><p>Projects made by the community.</p></div><button class="btn btn-primary" data-action="open-compose" data-type="launch">${icon('add', 20)} Share a launch</button></section>
         ${state.feedError ? `<p class="feed-status" role="alert">${escapeHtml(state.feedError)} <button data-action="reload-feed">Try again</button></p>` : ''}<section class="launch-grid">${state.feedLoading || !state.feedLoaded ? '<p class="feed-status" role="status">Loading launches…</p>' : launches.length ? launches.map(renderPost).join('') : `<div class="route-empty compact">${icon('rocket_launch', 30)}<strong>${state.feedError ? 'Launches unavailable' : 'No launches yet'}</strong><button class="btn btn-outline btn-small" data-action="open-compose" data-type="launch">Share a launch</button></div>`}</section>
     </main>`;
-}
-
-function catalogueModels() {
-    if (apiEnabled) return state.catalogue;
-    const ratings = readStorage('vibedock-preview-model-ratings', {});
-    return state.catalogue.filter(model => model.isActive !== false).map(model => {
-        const scores = Object.values(ratings).map(votes => Number(votes[model.id])).filter(score => score >= 1 && score <= 5);
-        return {...model, ratingCount:scores.length, averageRating:scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : null, myRating:ratings[state.currentUser?.id]?.[model.id] || null};
-    });
-}
-function renderModelsPage() {
-    const models = catalogueModels().filter(model => `${model.name} ${model.provider}`.toLowerCase().includes(state.modelQuery.toLowerCase()))
-        .sort((a,b) => (b.averageRating || 0)-(a.averageRating || 0) || b.ratingCount-a.ratingCount || a.name.localeCompare(b.name));
-    return `<main class="route-main models-page"><section class="page-intro">${illustration('toolkit', 'page-art')}<div><span class="route-eyebrow">Community-rated · Admin-curated</span><h1>Which AI builds better?</h1><p>Rate the models you’ve actually used for vibe coding.</p></div>${state.currentUser?.isAdmin ? '<a class="btn btn-outline" href="/admin#models" data-action="go-page" data-page="admin">Manage catalogue</a>' : ''}</section>
-        <div class="catalogue-toolbar"><label class="catalogue-search">${icon('search', 20)}<input type="search" data-model-search aria-label="Find an AI model" placeholder="Find a model or provider…" value="${escapeHtml(state.modelQuery)}"></label><span>Highest rated first · One rating per member</span></div>
-        ${!apiEnabled ? '<p class="preview-note">Demo catalogue. Ratings are saved in this browser only.</p>' : ''}
-        ${state.catalogueError ? `<div class="route-empty"><p>${escapeHtml(state.catalogueError)}</p><button class="btn btn-outline" data-action="reload-models">Try again</button></div>` : ''}
-        <div class="catalogue-grid">${(state.catalogueLoading || !state.catalogueLoaded) ? '<div class="route-loading">Loading catalogue…</div>' : models.map(model => `<article class="catalogue-card"><div class="catalogue-card-top"><span class="catalogue-art">${illustration('toolkit')}</span><span class="catalogue-provider">${escapeHtml(model.provider)}</span></div><h2>${escapeHtml(model.name)}</h2><p>${escapeHtml(model.description)}</p><div class="model-score"><strong>${model.averageRating ? Number(model.averageRating).toFixed(1) : '—'}</strong><span>${model.ratingCount ? `${model.ratingCount} ${model.ratingCount === 1 ? 'rating' : 'ratings'}` : 'Not rated yet'}</span>${model.websiteUrl && safeUrl(model.websiteUrl) ? `<a href="${escapeHtml(safeUrl(model.websiteUrl))}" target="_blank" rel="noopener noreferrer" aria-label="Visit ${escapeHtml(model.name)}">${icon('open_in_new', 20)}</a>` : ''}</div><fieldset class="model-rating"><legend>${model.myRating ? `Your rating: ${model.myRating}/5` : 'How is it for vibe coding?'}</legend><div>${[1,2,3,4,5].map(score => `<button class="rating-star ${score <= (model.myRating || 0) ? 'is-selected' : ''}" data-action="rate-model" data-model-id="${escapeHtml(model.id)}" data-score="${score}" aria-label="Rate ${escapeHtml(model.name)} ${score} out of 5" aria-pressed="${model.myRating === score}" ${state.ratingPending === String(model.id) ? 'disabled' : ''}><svg viewBox="0 0 24 24" width="27" height="27" aria-hidden="true"><path d="m12 3 2.8 5.8 6.4.9-4.6 4.5 1.1 6.4-5.7-3-5.7 3 1.1-6.4L2.8 9.7l6.4-.9Z"/></svg></button>`).join('')}</div></fieldset></article>`).join('')}</div>
-        ${state.catalogueLoaded && !state.catalogueLoading && !models.length && !state.catalogueError ? `<div class="route-empty">${illustration('toolkit')}<h2>No models here yet</h2><p>${state.modelQuery ? 'Try another search.' : 'An administrator will add the catalogue.'}</p></div>` : ''}
-    </main>`;
-}
-async function loadCatalogue() {
-    if (!apiEnabled || state.catalogueLoading) return;
-    state.catalogueLoading = true; state.catalogueLoaded = true; state.catalogueError = ''; renderApp();
-    try { state.catalogue = (await apiRequest('/api/models')).data || []; }
-    catch (error) { state.catalogueError = error.message; }
-    finally { state.catalogueLoading = false; if (state.page === 'models') renderApp(); }
-}
-async function rateModel(id, score) {
-    if (!state.currentUser) return openAuth('login');
-    if (state.ratingPending || ![1,2,3,4,5].includes(score)) return;
-    state.ratingPending = String(id); renderApp();
-    try {
-        if (apiEnabled) {
-            const result = await apiRequest(`/api/models/${encodeURIComponent(id)}/rating`, 'PUT', {score});
-            state.catalogue = state.catalogue.map(model => String(model.id) === String(id) ? result.model : model);
-        } else {
-            const ratings = readStorage('vibedock-preview-model-ratings', {});
-            ratings[state.currentUser.id] = {...(ratings[state.currentUser.id] || {}), [id]:score};
-            writeStorage('vibedock-preview-model-ratings', ratings);
-        }
-        showToast('Rating saved. You can change it anytime.');
-    } catch (error) { showToast(error.message); }
-    finally { state.ratingPending = null; renderApp(); }
-}
-function renderCatalogueAdmin() {
-    const model = state.catalogue.find(item => String(item.id) === state.editingModel) || {};
-    return `<section class="admin-preview-section catalogue-admin"><h2>AI model catalogue</h2><p>Admin-only demo controls. Production uses the protected Laravel admin area.</p><form class="model-admin-form" data-form="model-admin"><label class="field-label">Model name<input name="name" value="${escapeHtml(model.name || '')}" required maxlength="100"></label><label class="field-label">Provider<input name="provider" value="${escapeHtml(model.provider || '')}" required maxlength="80"></label><label class="field-label">Description<textarea name="description" required maxlength="500">${escapeHtml(model.description || '')}</textarea></label><label class="field-label">Official URL<input type="url" name="website_url" value="${escapeHtml(model.websiteUrl || '')}"></label><button class="btn btn-primary" type="submit">${model.id ? 'Save model' : 'Add model'}</button><div data-form-message class="form-message" hidden></div></form><div class="admin-model-list">${state.catalogue.map(item => `<div><strong>${escapeHtml(item.name)}</strong><span>${item.isActive === false ? 'Archived' : 'Published'}</span><button class="btn btn-outline btn-small" data-action="edit-catalogue-model" data-model-id="${escapeHtml(item.id)}">Edit</button><button class="btn btn-outline btn-small" data-action="archive-catalogue-model" data-model-id="${escapeHtml(item.id)}">${item.isActive === false ? 'Restore' : 'Archive'}</button></div>`).join('')}</div></section>`;
 }
 
 function localRankings() {
@@ -891,6 +849,51 @@ const infoContent = {
     terms: { eyebrow: 'Terms', title: 'Using VibeDock', intro: 'Use the community lawfully and treat members with care.', sections: [['Your content', 'You keep ownership of your work and give the service permission to host and display it as needed to run the community.'], ['Your account', 'Keep your sign in details private and use accurate contact information.'], ['Moderation', 'Administrators may hide content, review reports, or disable accounts to protect the community.']] },
 };
 
+const BADGES = [
+    {key:'first-step', label:'First step', glyph:'auto_awesome', description:'Publish your first post, question, poll, or launch.'},
+    {key:'regular', label:'Dock regular', glyph:'anchor', description:'Share 10 visible posts, questions, polls, or launches.'},
+    {key:'maker', label:'Launched it', glyph:'rocket_launch', description:'Publish your first project launch.'},
+    {key:'curious', label:'Curious mind', glyph:'bar_chart', description:'Start 3 community polls.'},
+    {key:'contributor', label:'Conversation starter', glyph:'forum', description:'Leave 10 comments on visible community posts.'},
+    {key:'community-star', label:'Community star', glyph:'star', description:'Awarded by an admin for a positive community impact.', source:'admin'},
+    {key:'expert', label:'Expert', glyph:'school', description:'Awarded by an admin for sharing valuable expertise.', source:'admin'},
+    {key:'early-supporter', label:'Early supporter', glyph:'favorite', description:'Awarded by an admin to recognize early supporters.', source:'admin'},
+];
+function previewBadges(user) {
+    const posts = state.posts.filter(post => !post.isHidden && String(post.author?.id) === String(user.id) && ['discussion','question','poll','launch'].includes(post.type));
+    const keys = [];
+    if (posts.length) keys.push('first-step');
+    if (posts.length >= 10) keys.push('regular');
+    if (posts.some(post => post.type === 'launch')) keys.push('maker');
+    if (posts.filter(post => post.type === 'poll').length >= 3) keys.push('curious');
+    const comments = state.posts.filter(post => !post.isHidden).flatMap(post => post.comments || []).filter(comment => String(comment.author?.id) === String(user.id));
+    if (comments.length >= 10) keys.push('contributor');
+    keys.push(...(readStorage('vibedock-preview-badges', {})[user.id] || []));
+    return BADGES.filter(badge => keys.includes(badge.key));
+}
+function renderMemberBadges(user) {
+    const badges = apiEnabled ? user.badges || [] : previewBadges(user);
+    return `<div class="member-badges" aria-label="Member badges">${badges.map(badge => `<a href="/badges" data-action="go-page" data-page="badges" class="member-badge ${badge.source === 'admin' ? 'admin-awarded' : ''}" title="${badge.source === 'admin' ? 'Awarded by an administrator' : 'Earned through community activity'}">${icon(BADGES.find(item => item.key === badge.key)?.glyph || 'star',16)}${escapeHtml(badge.label)}</a>`).join('')}${!badges.length ? '<a class="badge-empty" href="/badges" data-action="go-page" data-page="badges">Your next contribution could earn a badge →</a>' : ''}</div>`;
+}
+function renderPollsPage() {
+    const polls = state.posts.filter(post => post.type === 'poll' && !post.isHidden);
+    return `<main class="route-main polls-page"><section class="page-intro">${illustration('conversation','page-art')}<div><span class="route-eyebrow">LET THE COMMUNITY WEIGH IN</span><h1>Real people. Real opinions.</h1><p>Compare tools, test an idea, or decide what to build next.</p></div><button class="btn btn-primary" data-action="open-compose" data-type="poll">${icon('add',20)} Create a poll</button></section>${state.feedError ? `<p class="feed-status" role="alert">${escapeHtml(state.feedError)} <button data-action="reload-feed">Try again</button></p>` : ''}<section class="polls-list">${!state.feedLoaded || state.feedLoading ? '<p role="status">Loading polls…</p>' : polls.length ? polls.map(renderPost).join('') : '<div class="route-empty"><h2>Be the first to ask</h2><p>Make your next decision together.</p><button class="btn btn-outline" data-action="open-compose" data-type="poll">Start a poll</button></div>'}</section></main>`;
+}
+function renderGuidePage() {
+    if (state.page === 'badges') return `<main class="route-main guide-page"><header class="create-heading"><span class="section-kicker">SMALL STEPS. WELL EARNED.</span><h1>Your activity tells a story.</h1><p>Badges recognize what you bring to the dock.</p></header><div class="badge-guide-grid">${BADGES.map(badge => `<article class="badge-guide-card"><span class="badge-medallion ${badge.source === 'admin' ? 'admin-awarded' : ''}">${icon(badge.glyph,30)}</span><small>${badge.source === 'admin' ? 'ADMIN AWARDED' : 'ACTIVITY MILESTONE'}</small><h2>${badge.label}</h2><p>${badge.description}</p></article>`).join('')}</div><section class="guide-note"><h2>Earned, not bought.</h2><p>Activity badges reflect your current visible contributions. Removed or hidden content doesn’t count. Admin awards can be granted or revoked by the site team.</p><p>A business verification tick is separate: it indicates an admin has reviewed brand ownership, not that a project is endorsed.</p><a class="feature-link" href="/create/post" data-action="open-compose" data-type="discussion">Share something ${icon('arrow_forward',18)}</a></section></main>`;
+    return `<main class="route-main guide-page"><header class="create-heading"><span class="section-kicker">A QUICK LOOK AROUND</span><h1>Find your place on the dock.</h1><p>Make something. Share it. Keep going together.</p></header><div class="help-feature-grid">${[
+        ['post','forum','Share a post','Progress, discoveries, and the messy middle.'],
+        ['question','chat_bubble','Ask a question','Get a fresh perspective from fellow makers.'],
+        ['poll','bar_chart','Run a poll','Compare AI models or get feedback on your next idea.'],
+        ['launch','rocket_launch','Launch a project','A dedicated home for your build and your brand.'],
+    ].map(([type,glyph,title,body]) => `<a class="help-feature" href="/create/${type}" data-action="open-compose" data-type="${type === 'post' ? 'discussion' : type}">${icon(glyph,28)}<h2>${title}</h2><p>${body}</p><span>Get started →</span></a>`).join('')}</div><section class="guide-faq"><h2>A few useful answers</h2><details open><summary>How do brand claims and green ticks work?</summary><p>Add a unique brand handle when you launch and confirm you’re authorized to represent it. Your handle is reserved when the launch is published. An administrator reviews ownership before granting the green “Verified business” tick. Claims aren’t trademark registration, and verification isn’t an endorsement. An admin can revoke verification.</p></details><details><summary>How can I earn a badge?</summary><p>Share posts, launch projects, start polls, or join conversations. Activity badges appear on your profile automatically; admins can also award special recognition.</p><a class="feature-link" href="/badges" data-action="go-page" data-page="badges">View all badges →</a></details><details><summary>Can I sign in with Google or Facebook?</summary><p>Yes, on the live site once social sign-in is configured. Use “Continue with Google” or “Continue with Facebook” on either sign-in or registration. Email sign-in is always available. The standalone demo cannot connect to these providers.</p></details><details><summary>Where can I change my avatar?</summary><p>Open your profile, choose Edit profile, and select a 3D character or upload your own photo. Our character library uses Microsoft Fluent Emoji artwork under the MIT license.</p></details><details><summary>How do I report an issue or unsafe content?</summary><p>Use the post’s More options menu or the message’s options to report content to the site team. You can also block members. Never share account credentials or private API keys in posts.</p><a class="feature-link" href="/guidelines" data-action="go-page" data-page="guidelines">Read the guidelines →</a></details></section></main>`;
+}
+function renderRecognitionAdmin() {
+    const members = new Map(state.posts.filter(post=>post.author?.id).map(post=>[String(post.author.id),post.author]));
+    if (state.currentUser) members.set(String(state.currentUser.id), state.currentUser);
+    return `<section class="admin-preview-section"><h2>Member badges</h2><p>Demo controls only. Production awards are protected by administrator permissions.</p><form class="recognition-form" data-form="demo-badge"><label class="field-label">Member<select name="user">${[...members.values()].map(user=>`<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`).join('')}</select></label><label class="field-label">Badge<select name="badge">${BADGES.filter(b=>b.source==='admin').map(b=>`<option value="${b.key}">${b.label}</option>`).join('')}</select></label><label class="field-label">Action<select name="action"><option value="award">Award</option><option value="revoke">Revoke</option></select></label><button class="btn btn-primary" type="submit">Update badge</button></form></section><section class="admin-preview-section"><h2>Brand verification</h2><p>Confirm ownership independently before granting a green tick. Never verify a claim based on the name alone.</p>${state.posts.filter(post=>post.brand).map(post=>`<article class="admin-preview-row"><div><strong>@${escapeHtml(post.brand.slug)}</strong><span>${escapeHtml(post.title)} · ${escapeHtml(post.brand.status)}</span></div><button class="btn btn-outline btn-small" data-action="demo-verify-brand" data-post-id="${escapeHtml(post.id)}">${post.brand.status==='verified'?'Revoke tick':'Verify ownership'}</button></article>`).join('') || '<p>No brand claims yet.</p>'}</section>`;
+}
+
 function renderInfoPage() {
     const content = infoContent[state.page] || infoContent.about;
     return `<main class="route-main info-page"><header class="info-page-heading">${illustration('conversation')}<span class="route-eyebrow">${content.eyebrow}</span><h1>${content.title}</h1><p>${content.intro}</p></header><div class="info-page-sections">${content.sections.map(([title, body]) => `<section><h2>${title}</h2><p>${body}</p></section>`).join('')}</div><nav class="info-page-links" aria-label="More information"><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="guidelines">Guidelines</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button></nav></main>`;
@@ -899,7 +902,7 @@ function renderInfoPage() {
 function renderAdminPage() {
     if (!state.currentUser) return `<main class="route-main"><section class="route-empty">${icon('lock', 30)}<h1>Admin access</h1><button class="btn btn-primary" data-action="open-auth" data-mode="login">Sign in</button></section></main>`;
     if (!state.currentUser.isAdmin) return `<main class="route-main"><section class="route-empty">${icon('lock', 30)}<h1>Admins only</h1><button class="btn btn-outline" data-action="go-page" data-page="home">Back to feed</button></section></main>`;
-    return `<main class="route-main admin-preview-page"><header class="admin-preview-heading"><div><span class="route-eyebrow">Preview</span><h1>Admin panel</h1></div><a class="btn btn-outline btn-small" href="/admin">Open full panel</a></header><div class="admin-preview-stats"><div><strong>${state.posts.length}</strong><span>Posts</span></div><div><strong>${state.posts.filter((post) => post.type === 'launch').length}</strong><span>Launches</span></div><div><strong>${state.catalogue.length}</strong><span>AI models</span></div></div>${renderCatalogueAdmin()}<section class="admin-preview-section"><h2>Recent posts</h2>${state.posts.slice(0, 10).map((post) => `<article class="admin-preview-row"><div><strong>${escapeHtml(post.title || post.body.slice(0, 70))}</strong><span>${escapeHtml(post.authorName || 'Member')} · ${escapeHtml(prettyType(post.type))}</span></div><button class="btn btn-outline btn-small" data-action="admin-hide-post" data-post-id="${escapeHtml(post.id)}">${post.isHidden ? 'Restore' : 'Hide'}</button></article>`).join('')}</section></main>`;
+    return `<main class="route-main admin-preview-page"><header class="admin-preview-heading"><div><span class="route-eyebrow">Preview</span><h1>Admin panel</h1></div><a class="btn btn-outline btn-small" href="/admin">Open full panel</a></header><div class="admin-preview-stats"><div><strong>${state.posts.length}</strong><span>Posts</span></div><div><strong>${state.posts.filter((post) => post.type === 'launch').length}</strong><span>Launches</span></div></div>${renderRecognitionAdmin()}<section class="admin-preview-section"><h2>Recent posts</h2>${state.posts.slice(0, 10).map((post) => `<article class="admin-preview-row"><div><strong>${escapeHtml(post.title || post.body.slice(0, 70))}</strong><span>${escapeHtml(post.authorName || 'Member')} · ${escapeHtml(prettyType(post.type))}</span></div><button class="btn btn-outline btn-small" data-action="admin-hide-post" data-post-id="${escapeHtml(post.id)}">${post.isHidden ? 'Restore' : 'Hide'}</button></article>`).join('')}</section></main>`;
 }
 
 function renderMobileNav() {
@@ -1044,8 +1047,8 @@ function renderFooter() {
     return `<footer class="site-footer"><div class="footer-shell">
         <div class="footer-main">
             <div class="footer-brand-block"><a class="brand footer-brand" href="/" data-action="go-page" data-page="home">${brandMark()}<span class="brand-word">vibe<span>dock</span></span></a><p>A home for vibe coders.</p></div>
-            <div class="footer-column"><strong>Explore</strong><button data-action="go-page" data-page="feed">Feed</button><button data-action="go-page" data-page="models">AI models</button><button data-action="go-page" data-page="launches">Launches</button><button data-action="go-page" data-page="rankings">Rankings</button><button data-action="go-page" data-page="community-chat">Community chat</button></div>
-            <div class="footer-column"><strong>Information</strong><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="guidelines">Guidelines</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button></div>
+            <div class="footer-column"><strong>Explore</strong><button data-action="go-page" data-page="feed">Feed</button><button data-action="go-page" data-page="polls">Polls</button><button data-action="go-page" data-page="launches">Launches</button><button data-action="go-page" data-page="rankings">Rankings</button><button data-action="go-page" data-page="community-chat">Community chat</button></div>
+            <div class="footer-column"><strong>Information</strong><button data-action="go-page" data-page="help">Help & features</button><button data-action="go-page" data-page="badges">Badges</button><button data-action="go-page" data-page="about">About</button><button data-action="go-page" data-page="guidelines">Guidelines</button><button data-action="go-page" data-page="privacy">Privacy</button><button data-action="go-page" data-page="terms">Terms</button></div>
             <div class="footer-column"><strong>Account</strong>${state.currentUser ? `<button data-action="open-my-profile">Your profile</button><button data-action="go-page" data-page="messages">Messages</button>${state.currentUser.isAdmin ? `<a href="/admin">Admin panel</a>` : ''}<button data-action="logout">Sign out</button>` : `<button data-action="open-auth" data-mode="register">Join free</button><button data-action="open-auth" data-mode="login">Sign in</button>`}</div>
         </div>
         <div class="footer-bottom"><span>© ${new Date().getFullYear()} VibeDock</span></div>
@@ -1067,7 +1070,7 @@ function renderAuthModal() {
     const isLogin = state.authMode === 'login';
     const socialOptions = apiEnabled
         ? `<div class="oauth-options"><a class="oauth-button" href="/auth/google/redirect">${socialBrand('google')}<span>Continue with Google</span></a><a class="oauth-button" href="/auth/facebook/redirect">${socialBrand('facebook')}<span>Continue with Facebook</span></a></div><div class="auth-divider"><span>or use email</span></div>`
-        : `<section class="demo-credentials"><strong>Demo accounts</strong><div><code>demo@vibedock.test</code><button type="button" data-action="fill-demo-account" data-demo-account="member">Use</button></div><div><code>admin@vibedock.test</code><button type="button" data-action="fill-demo-account" data-demo-account="admin">Use</button></div></section>`;
+        : `<div class="oauth-options"><button class="oauth-button" data-action="demo-social">${socialBrand('google')}<span>Continue with Google</span></button><button class="oauth-button" data-action="demo-social">${socialBrand('facebook')}<span>Continue with Facebook</span></button></div><p class="oauth-preview-note">Social sign-in is available on the configured live site. Use a demo account here.</p><div class="auth-divider"><span>or use email</span></div><section class="demo-credentials"><strong>Demo accounts</strong><div><code>demo@vibedock.test</code><button type="button" data-action="fill-demo-account" data-demo-account="member">Use</button></div><div><code>admin@vibedock.test</code><button type="button" data-action="fill-demo-account" data-demo-account="admin">Use</button></div></section>`;
     return `<div class="modal-backdrop" data-action="backdrop-close"><section class="modal-dialog auth-dialog" role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button class="modal-close icon-button" data-action="close-modal" aria-label="Close">${icon('close', 21)}</button>
         <div class="modal-brand">${brandMark()}<span class="brand-word">vibe<span>dock</span></span></div>
@@ -1095,38 +1098,63 @@ function uploadField(name, title) {
     });
 }
 
-function renderComposeModal() {
-    const type = state.composeType;
-    const titles = {discussion:'Share a post', question:'Ask a question', poll:'Create a poll', launch:'Launch your project'};
-    const types = [['discussion','forum','Post'],['question','chat_bubble','Question'],['poll','bar_chart','Poll'],['launch','rocket_launch','Launch']];
-    return `<div class="modal-backdrop" data-action="backdrop-close"><section class="modal-dialog compose-dialog" role="dialog" aria-modal="true" aria-labelledby="compose-title"><button class="modal-close icon-button" aria-label="Close" data-action="close-modal">${icon('close',20)}</button><h2 id="compose-title">${titles[type]}</h2><div class="compose-type-switch" aria-label="Post type">${types.map(([key,glyph,label])=>`<button class="${type===key?'is-active':''}" data-action="compose-type" data-type="${key}" aria-pressed="${type===key}">${icon(glyph,18)} ${label}</button>`).join('')}</div>
+function renderCreatePage() {
+    const type = state.page === 'create-post' ? 'discussion' : state.page.slice(7);
+    const titles = {discussion:'Share a post', question:'Ask a question', poll:'Create a poll', launch:'Your next big thing. Starts here.'};
+    const hints = {discussion:'A small update can start a great conversation.', question:'A fresh perspective is one question away.', poll:'Real opinions. Better decisions.', launch:'Give your project a home on the dock.'};
+    return `<main class="route-main create-page ${type === 'launch' ? 'launch-studio' : ''}"><a class="feature-link" href="${type === 'launch' ? '/launches' : '/feed'}" data-action="go-page" data-page="${type === 'launch' ? 'launches' : 'feed'}">${icon('arrow_back',18)} Back to ${type === 'launch' ? 'launches' : 'feed'}</a><header class="create-heading"><span class="section-kicker">${type === 'launch' ? 'THE LAUNCH STUDIO' : 'YOUR COMMUNITY'}</span><h1>${titles[type]}</h1><p>${hints[type]}</p></header>
+    ${!state.currentUser ? `<section class="settings-panel"><h2>Make yourself at home</h2><p>Sign in to ${type === 'launch' ? 'launch your project' : titles[type].toLowerCase()}.</p><button class="btn btn-primary" data-action="open-auth" data-mode="login">Sign in</button> <button class="btn btn-outline" data-action="open-auth" data-mode="register">Create account</button></section>` : `<div class="create-layout"><section class="create-editor">
     <form class="modal-form compose-form" data-form="compose" data-type="${type}">
         ${type!=='discussion'?`<label class="field-label">${type==='launch'?'Project name':type==='poll'?'Poll question':'Your question'}<input name="title" maxlength="140" required></label>`:''}
-        <label class="field-label">${type==='launch'?'Project description':type==='poll'?'Context (optional)':'Your post'}<textarea name="body" rows="4" maxlength="5000" ${type!=='poll'?'required':''} placeholder="${type==='launch'?'What did you build, and who is it for?':'What would you like to share?'}"></textarea></label>
+        <label class="field-label">${type==='launch'?'What does it do?':type==='poll'?'Context (optional)':type==='question'?'Details':'Your post'}<textarea name="body" rows="4" maxlength="5000" ${type!=='poll'?'required':''} placeholder="${type==='launch'?'What did you build, and who is it for?':'What would you like to share?'}"></textarea></label>
         ${type==='poll'?`<div class="poll-option-fields">${[1,2].map(i=>`<label class="field-label">Option ${i}<input name="options[]" maxlength="80" required></label>`).join('')}</div><button class="add-option" type="button" data-action="add-option">${icon('add',16)} Add option</button>`:''}
-        ${type==='launch'?`<label class="field-label">Project URL<input type="url" name="project_url" required placeholder="https://your-project.com"></label><label class="field-label">Project type<select name="launch_category"><option value="website">Website</option><option value="app">App</option><option value="ai_tool">AI tool</option><option value="ai_app">AI app</option><option value="other">Other</option></select></label><label class="field-label">SEO description <small>A short search preview, up to 160 characters.</small><textarea name="seo_description" rows="2" maxlength="160" placeholder="Describe your project in one useful sentence."></textarea></label>${uploadField('logo', 'Project logo')}`:`${uploadField('image', 'Image (optional)')}<label class="field-label">Topic<select name="category"><option value="">None</option>${popularTopics.map(topic=>`<option>${escapeHtml(topic)}</option>`).join('')}</select></label>`}
-        <div class="form-message" data-form-message hidden></div><div class="compose-submit-row"><button class="btn btn-primary" type="submit">${type==='launch'?'Publish launch':type==='poll'?'Publish poll':'Publish post'}</button></div>
-    </form></section></div>`;
+        ${type==='launch'?`<label class="field-label">Project URL<input type="url" name="project_url" required placeholder="https://your-project.com"></label><label class="field-label">Project type<select name="launch_category"><option value="website">Website</option><option value="app">App</option><option value="ai_tool">AI tool</option><option value="ai_app">AI app</option><option value="other">Other</option></select></label><label class="field-label">SEO description <small>A short search preview, up to 160 characters.</small><textarea name="seo_description" rows="2" maxlength="160" placeholder="Describe your project in one useful sentence."></textarea></label>${uploadField('logo', 'Project logo')}${uploadField('image', 'Project screenshot (optional)')}<fieldset class="brand-claim-fields"><legend>Claim your brand <span>Optional</span></legend><label class="field-label">Brand handle<input name="brand_slug" minlength="3" maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="your-brand" aria-describedby="brand-hint"></label><p id="brand-hint">Your own /brands/your-brand address. Lowercase letters, numbers and hyphens. Reserved when you publish.</p><label class="claim-consent"><input type="checkbox" name="brand_authorized" value="1"> I’m authorized to represent this brand.</label><small>Claims do not establish trademark rights. A green tick appears only after an admin reviews ownership.</small></fieldset>`:`${uploadField('image', 'Image (optional)')}<label class="field-label">Topic<select name="category"><option value="">None</option>${popularTopics.map(topic=>`<option>${escapeHtml(topic)}</option>`).join('')}</select></label>`}
+        <div class="form-message" data-form-message hidden></div><div class="compose-submit-row"><button class="btn btn-primary" type="submit">${type==='launch'?'Publish launch':type==='poll'?'Publish poll':type==='question'?'Ask question':'Publish post'}</button></div>
+    </form>
+    </section><aside class="create-aside">${type === 'launch' ? `<div class="launch-live-preview"><span class="section-kicker">YOUR LAUNCH PREVIEW</span><div class="launch-preview-logo">${icon('rocket_launch',36)}</div><h2 data-launch-title>Your project name</h2><p data-launch-description>Something worth sharing.</p><span class="launch-preview-domain" data-launch-domain>your-project.com</span><span class="launch-preview-tag">Made by @${escapeHtml(state.currentUser.username)}</span></div><div class="create-tip"><strong>A name. A story. A first impression.</strong><p>Add a clear logo and a real screenshot. Tell people who it’s for.</p></div>` : `<div class="create-tip">${icon(typeIcon(type),32)}<h2>${type === 'poll' ? 'Make every vote count' : type === 'question' ? 'Make it easy to help' : 'Keep it real'}</h2><p>${type === 'poll' ? 'Use distinct options. Comparing AI models? Name the task you’re testing.' : type === 'question' ? 'Include what you tried and what you expected. Never share passwords or API keys.' : 'Share something you learned, made, or are working through.'}</p></div>`}</aside></div>`}</main>`;
 }
+
 function renderProfileEditPage() {
     if (!state.currentUser) return `<main class="route-main"><section class="route-empty"><h1>Edit profile</h1><button class="btn btn-primary" data-action="open-auth" data-mode="login">Sign in</button></section></main>`;
     const user=state.currentUser;
     return `<main class="route-main profile-edit-page"><header class="settings-heading"><div><span class="section-kicker">Make yourself at home</span><h1>Your profile, your personality.</h1></div><button class="btn btn-outline" data-action="open-my-profile">View profile ${icon('arrow_forward',18)}</button></header>
-    <form data-form="profile" class="profile-settings-form"><aside class="settings-preview"><div class="profile-preview-cover cover-${escapeHtml(user.coverChoice||'aurora')}"></div><img class="settings-avatar" src="${escapeHtml(safeImageUrl(user.avatarUrl)||'/avatars/orbit-ollie.svg')}" alt="Your selected avatar" width="112" height="112"><h2 data-profile-name>${escapeHtml(user.name)}</h2><p>@${escapeHtml(user.username)}</p><div class="settings-section-links"><a href="#profile-basics">The basics</a><a href="#profile-style">Your look</a><a href="#profile-skills">Your skills</a></div><button type="submit" class="btn btn-primary">Save changes ${icon('check',18)}</button></aside>
+    <form data-form="profile" class="profile-settings-form"><aside class="settings-preview"><div class="profile-preview-cover cover-${escapeHtml(user.coverChoice||'aurora')}"></div><img class="settings-avatar" src="${escapeHtml(avatarAsset(user.avatarUrl)?.large || safeImageUrl(user.avatarUrl) || avatarPath('fluent-astronaut', 'large'))}" alt="Your selected avatar" width="112" height="112" decoding="async" loading="eager"><h2 data-profile-name>${escapeHtml(user.name)}</h2><p>@${escapeHtml(user.username)}</p><div class="settings-section-links"><a href="#profile-basics">The basics</a><a href="#profile-style">Your look</a><a href="#profile-skills">Your skills</a></div><button type="submit" class="btn btn-primary">Save changes ${icon('check',18)}</button></aside>
     <div class="settings-fields"><section id="profile-basics" class="settings-panel"><div class="settings-panel-heading">${illustration('maker')}<div><h2>The basics</h2><p>Let fellow makers get to know you.</p></div></div><div class="settings-two-col"><label class="field-label">Name<input name="name" value="${escapeHtml(user.name)}" maxlength="80" minlength="2" required></label><label class="field-label">Username<input name="username" value="${escapeHtml(user.username)}" pattern="[A-Za-z0-9_]+" minlength="3" maxlength="24" required></label></div><label class="field-label">What do you do?<input name="profession" value="${escapeHtml(user.profession||'')}" maxlength="80" placeholder="Designer, developer, curious human…"></label><label class="field-label">About you<textarea name="bio" rows="3" maxlength="280">${escapeHtml(user.bio||'')}</textarea></label><label class="field-label">Website<input name="website" type="url" value="${escapeHtml(user.website||'')}" placeholder="https://"></label></section>
-    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>A little character</h2><p>Original characters. Entirely your choice.</p></div></div>${renderAvatarPicker(user)}${uploadField('avatar', 'Or upload your own photo')}${renderCoverPicker(user)}</section>
+    <section id="profile-style" class="settings-panel"><div class="settings-panel-heading">${illustration('conversation')}<div><h2>A little character</h2><p>Male, female, or a little character. Find your look.</p></div></div>${renderAvatarPicker(user)}${uploadField('avatar', 'Or upload your own photo')}${renderCoverPicker(user)}</section>
     <section id="profile-skills" class="settings-panel"><div class="settings-panel-heading">${illustration('build')}<div><h2>What’s in your toolkit?</h2><p>Choose up to 12 skills. Add your own, too.</p></div></div><label class="field-label">Selected skills<input name="skills" maxlength="420" value="${escapeHtml((user.skills||[]).join(', '))}" placeholder="Add custom skills, separated by commas"></label>${renderSkillPicker(user.skills||[])}</section><div class="settings-save"><div class="form-message" data-form-message hidden></div><button type="submit" class="btn btn-primary">Save changes</button></div></div></form></main>`;
 }
 
 function renderAvatarPicker(user) {
     const selected = user.avatarUploaded || !AVATAR_CHOICES.some(choice=>choice.key===user.avatarChoice) ? 'keep' : user.avatarChoice;
-    const groups = ['The cast'];
-    return `<fieldset class="avatar-picker"><legend>Avatar</legend>
-        ${user.avatarUploaded || !AVATAR_CHOICES.some(choice => choice.key === selected) ? `<label class="avatar-current-choice"><input type="radio" name="avatar_choice" value="keep" ${selected === 'keep' ? 'checked' : ''}>${avatar(user.name || 'You', 'tone-neutral', 'avatar-choice-preview', user.avatarUrl)}<span>Keep current avatar</span></label>` : ''}
-        <div class="avatar-picker-tools"><button type="button" class="btn btn-outline btn-small" data-action="random-avatar">${icon('shuffle', 16)} Random</button></div>
-        ${groups.map((group) => `<div class="avatar-choice-group"><span>${group}</span><div class="avatar-choice-grid" id="avatar-cast">${AVATAR_CHOICES.filter((choice) => choice.group === group).map((choice, index) => `<label ${index >= 8 && selected !== choice.key ? 'hidden' : ''} data-avatar-index="${index}" class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}><img src="/avatars/${choice.key}.svg" alt="${choice.label}" loading="lazy"><span>${choice.label}</span></label>`).join('')}</div></div>`).join('')}
-        <button type="button" class="picker-expand" data-action="expand-avatars" aria-expanded="false" aria-controls="avatar-cast">Meet all ${AVATAR_CHOICES.length} characters ${icon('expand_more',18)}</button>
+    const groups = ['Male', 'Female', 'Characters'];
+    const active = AVATAR_CHOICES.find(choice => choice.key === selected)?.group || 'Male';
+    return `<fieldset class="avatar-picker" data-active-avatar-group="${active}"><legend>Avatar</legend>
+        ${selected === 'keep' ? `<label class="avatar-current-choice"><input type="radio" name="avatar_choice" value="keep" checked>${avatar(user.name || 'You', 'tone-neutral', 'avatar-choice-preview', user.avatarUrl)}<span>Keep current avatar</span></label>` : ''}
+        <div class="avatar-picker-tools"><div class="avatar-group-switch" role="group" aria-label="Avatar category">${groups.map(group => `<button type="button" data-action="avatar-group" data-group="${group}" aria-pressed="${group === active}" aria-controls="avatar-${group.toLowerCase()}">${group}</button>`).join('')}</div><button type="button" class="btn btn-outline btn-small" data-action="random-avatar">${icon('shuffle', 16)} Random</button></div>
+        ${groups.map(group => `<div class="avatar-choice-group" id="avatar-${group.toLowerCase()}" data-avatar-group="${group}" ${active !== group ? 'hidden' : ''}><div class="avatar-choice-grid">${AVATAR_CHOICES.filter(choice => choice.group === group).map((choice, index) => {
+            const visible = index < 8 || selected === choice.key;
+            return `<label ${!visible ? 'hidden' : ''} data-avatar-index="${index}" class="avatar-choice ${selected === choice.key ? 'is-selected' : ''}" title="${choice.label}"><input type="radio" name="avatar_choice" value="${choice.key}" ${selected === choice.key ? 'checked' : ''}>${active === group && visible ? avatarChoiceImage(choice) : `<span class="avatar-placeholder" data-avatar-image="${choice.key}"></span>`}<span>${choice.label}</span></label>`;
+        }).join('')}</div>${group === 'Characters' ? `<button type="button" class="picker-expand" data-action="expand-avatars" aria-expanded="false" aria-controls="avatar-characters">Meet all 12 characters ${icon('expand_more',18)}</button>` : ''}</div>`).join('')}
+        <p class="avatar-picker-note">Your choice, not a profile label. Only the group you open loads images.</p>
     </fieldset>`;
+}
+function avatarChoiceImage(choice) {
+    return `<img src="${avatarPath(choice.key)}" ${avatarResolutionAttributes(choice.key, 72)} alt="${choice.label}" width="96" height="96" loading="lazy" decoding="async">`;
+}
+function hydrateAvatarGroup(panel) {
+    panel.querySelectorAll('.avatar-choice:not([hidden]) [data-avatar-image]').forEach(placeholder => {
+        const choice = AVATAR_CHOICES.find(item => item.key === placeholder.dataset.avatarImage);
+        if (choice) placeholder.outerHTML = avatarChoiceImage(choice);
+    });
+}
+function selectAvatarGroup(picker, group) {
+    if (!['Male','Female','Characters'].includes(group)) return;
+    picker.dataset.activeAvatarGroup = group;
+    picker.querySelectorAll('[data-action="avatar-group"]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.group === group)));
+    picker.querySelectorAll('[data-avatar-group]').forEach(panel => {
+        panel.hidden = panel.dataset.avatarGroup !== group;
+        if (!panel.hidden) hydrateAvatarGroup(panel);
+    });
 }
 
 function renderCoverPicker(user) {
@@ -1152,17 +1180,18 @@ function renderReportModal() {
 
 function renderModal() {
     if (state.modal === 'auth') return renderAuthModal();
-    if (state.modal === 'compose') return renderComposeModal();
     if (state.modal === 'report') return renderReportModal();
     if (['new-message', 'blocked-members', 'block-member', 'message-report'].includes(state.modal)) return renderMessagingModal();
     return '';
 }
 
 function renderPageContent() {
+    if (creationPages.includes(state.page)) return renderCreatePage();
+    if (state.page === 'polls') return renderPollsPage();
+    if (state.page === 'badges' || state.page === 'help') return renderGuidePage();
     if (state.page === 'feed') return renderMain();
     if (state.page === 'profile-edit') return renderProfileEditPage();
     if (state.page === 'launches') return renderLaunchPage();
-    if (state.page === 'models') return renderModelsPage();
     if (state.page === 'rankings') return renderRankingsPage();
     if (state.page === 'community-chat') return renderCommunityChatPage();
     if (state.page === 'profile') return renderProfilePage();
@@ -1184,7 +1213,7 @@ function renderApp({ updatePage = true } = {}) {
     if (!root) return;
     if (!document.querySelector('#page-content')) root.innerHTML = '<div id="header-region"></div><div id="page-content"></div><div id="footer-region"></div><div id="navigation-region"></div><div id="modal-region"></div>';
     patchRegion('header-region', renderHeader());
-    if (updatePage && !(state.page === 'profile-edit' && renderedPage === 'profile-edit' && document.querySelector('.profile-settings-form'))) patchRegion('page-content', renderPageContent());
+    if (updatePage && !(creationPages.includes(state.page) && renderedPage === state.page && document.querySelector('.create-editor')) && !(state.page === 'profile-edit' && renderedPage === 'profile-edit' && document.querySelector('.profile-settings-form'))) patchRegion('page-content', renderPageContent());
     renderedPage = state.page;
     patchRegion('footer-region', ['messages', 'community-chat', 'profile-edit'].includes(state.page) ? '' : renderFooter());
     patchRegion('navigation-region', renderMobileNav());
@@ -1206,8 +1235,7 @@ function renderApp({ updatePage = true } = {}) {
     if (state.page === 'messages' && !state.conversationsLoaded) {
         void loadConversations();
     }
-    if (state.page === 'models' && !state.catalogueLoaded && !state.catalogueLoading) void loadCatalogue();
-    if (['feed','launches'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
+    if (['feed','launches','polls'].includes(state.page) && !state.feedLoaded && !state.feedLoading) void loadServerFeed();
     if (state.page === 'rankings' && !state.rankingsLoaded) void loadRankings();
     if (state.page === 'community-chat' && state.currentUser && !state.groupChatLoaded && !state.groupChatLoading) void loadCommunityChat();
     if (state.page === 'community-chat') {
@@ -1249,13 +1277,8 @@ function openAuth(mode = 'register') {
 }
 
 function openCompose(type = 'discussion') {
-    if (!state.currentUser) {
-        openAuth('register');
-        return;
-    }
-    state.modal = 'compose';
-    state.composeType = ['discussion', 'question', 'poll', 'launch'].includes(type) ? type : 'discussion';
-    renderApp({ updatePage: false });
+    const kind = ['question','poll','launch'].includes(type) ? type : 'post';
+    navigateTo(`create-${kind}`);
 }
 
 function showMessage(form, message, isError = true) {
@@ -1320,7 +1343,7 @@ async function loadServerFeed() {
         state.posts = linked && !posts.some(post => post.id === linked.id) ? [...posts, linked] : posts;
     }
     catch (error) { state.feedError = error.message; }
-    finally { state.feedLoading = false; if (['feed','launches','rankings'].includes(state.page)) renderApp(); }
+    finally { state.feedLoading = false; if (['feed','launches','polls','rankings'].includes(state.page)) renderApp(); }
 }
 
 async function loadRankings() {
@@ -1555,7 +1578,7 @@ function showMessageError(type, message) {
 
 
 function navigateTo(page, username = null) {
-    const allowed = ['home', 'feed', 'profile-edit', 'models', 'launches', 'rankings', 'community-chat', 'messages', 'profile', 'admin', 'about', 'guidelines', 'privacy', 'terms'];
+    const allowed = ['home', 'feed', 'profile-edit', 'polls', 'badges', 'help', ...creationPages, 'launches', 'rankings', 'community-chat', 'messages', 'profile', 'admin', 'about', 'guidelines', 'privacy', 'terms'];
     const nextPage = allowed.includes(page) ? page : 'home';
     if (nextPage === 'admin' && apiEnabled) {
         window.location.assign('/admin');
@@ -1577,7 +1600,7 @@ function navigateTo(page, username = null) {
         state.profileUsername = null;
     }
     if (nextPage === 'community-chat' && !apiEnabled) state.groupChatLoaded = true;
-    const path = nextPage === 'home' ? '/' : nextPage === 'profile-edit' ? '/settings/profile' : nextPage === 'profile' ? `/u/${encodeURIComponent(nextUsername)}` : `/${nextPage}`;
+    const path = creationPages.includes(nextPage) ? `/create/${nextPage.slice(7)}` : nextPage === 'home' ? '/' : nextPage === 'profile-edit' ? '/settings/profile' : nextPage === 'profile' ? `/u/${encodeURIComponent(nextUsername)}` : `/${nextPage}`;
     window.history.pushState({}, '', path);
     renderApp();
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1650,20 +1673,20 @@ async function createAuth(form) {
             state.currentUser = result.user;
         } else if (mode === 'login') {
             const demoAccounts = {
-                'demo@vibedock.test': { password: 'VibeDockDemo2026!', name: 'Demo Maker', username: 'demomaker', avatarChoice: 'byte-bard', coverChoice: 'blossom', isAdmin: false, profession: 'Independent maker', skills: ['Prototyping', 'AI tools', 'Product design'] },
-                'admin@vibedock.test': { password: 'VibeDockAdmin2026!', name: 'Demo Admin', username: 'demoadmin', avatarChoice: 'agent-loop', coverChoice: 'ocean', isAdmin: true, profession: 'Community moderator', skills: ['Community building'] },
+                'demo@vibedock.test': { password: 'VibeDockDemo2026!', name: 'Demo Maker', username: 'demomaker', avatarChoice: 'fluent-owl', coverChoice: 'blossom', isAdmin: false, profession: 'Independent maker', skills: ['Prototyping', 'AI tools', 'Product design'] },
+                'admin@vibedock.test': { password: 'VibeDockAdmin2026!', name: 'Demo Admin', username: 'demoadmin', avatarChoice: 'fluent-ninja', coverChoice: 'ocean', isAdmin: true, profession: 'Community moderator', skills: ['Community building'] },
             };
             const account = demoAccounts[payload.email.toLowerCase()];
             if (!account || account.password !== payload.password) throw new Error('Use one of the demo accounts shown above.');
             const { password: _password, ...profile } = account;
-            state.currentUser = { id: `preview-${profile.username}`, ...profile, email: payload.email, avatarUploaded: false, avatarUrl: `/avatars/${profile.avatarChoice}.svg` };
+            state.currentUser = { id: `preview-${profile.username}`, ...profile, email: payload.email, avatarUploaded: false, avatarUrl: avatarPath(profile.avatarChoice) };
         } else {
             const username = payload.username || payload.name.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 24);
             if (username.length < 3) throw new Error('Choose a username with at least three letters or numbers.');
-            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'orbit-ollie', avatarUploaded: false, avatarUrl: '/avatars/orbit-ollie.svg', isAdmin: false };
+            state.currentUser = { id: `preview-${Date.now()}`, name: payload.name, username, email: payload.email, bio: '', profession: '', skills: [], coverChoice: 'aurora', avatarChoice: 'fluent-astronaut', avatarUploaded: false, avatarUrl: '/avatars/fluent-astronaut.png', isAdmin: false };
             writeStorage(STORAGE.user, state.currentUser);
         }
-        state.modal = null; state.catalogueLoaded = !apiEnabled;
+        state.modal = null;
         state.feedLoaded = !apiEnabled; state.rankingsLoaded = false; state.rankings = null;
         state.profileLoadedFor = null;
         persistDemo(); renderApp(); showToast('Welcome!');
@@ -1687,6 +1710,8 @@ function readFileAsDataUrl(file) {
 }
 
 async function createPost(form) {
+    if (form.dataset.saving || !state.currentUser) return;
+    form.dataset.saving = 'true';
     const formData = new FormData(form);
     const type = form.dataset.type;
     const options = formData.getAll('options[]').map((value) => String(value).trim()).filter(Boolean);
@@ -1697,6 +1722,7 @@ async function createPost(form) {
         category: String(formData.get('category') || '').trim(),
         launch_category: String(formData.get('launch_category') || ''),
         project_url: String(formData.get('project_url') || '').trim(),
+        ...(type === 'launch' && String(formData.get('brand_slug') || '').trim() ? {brand_slug: String(formData.get('brand_slug')).trim(), brand_authorized: formData.get('brand_authorized') || ''} : {}),
         ...(type === 'launch' ? {seo_description: String(formData.get('seo_description') || '').trim()} : {}),
     };
     if (type === 'poll') payload.options = options;
@@ -1711,6 +1737,9 @@ async function createPost(form) {
         for (const [name, file] of [['image', imageFile], ['logo', logoFile]]) {
             if (file instanceof File && file.size > 0) { const error = validateUpload(file, name, apiEnabled); if (error) throw new Error(error); }
         }
+        if (payload.brand_slug && (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(payload.brand_slug) || payload.brand_slug.length < 3 || payload.brand_slug.length > 40)) throw new Error('Use 3–40 lowercase letters, numbers or hyphens for your brand handle.');
+        if (payload.brand_slug && !payload.brand_authorized) throw new Error('Confirm that you are authorized to represent this brand.');
+        if (!apiEnabled && payload.brand_slug && state.posts.some(post => post.brand?.slug === payload.brand_slug)) throw new Error('That brand handle is already claimed. Choose another.');
         if (type === 'launch' && !safeUrl(payload.project_url)) throw new Error('Use a valid https:// or http:// project URL.');
         if (type === 'poll' && (options.length < 2 || new Set(options.map(option => option.toLowerCase())).size !== options.length)) throw new Error('Add at least two different poll options.');
         checkMessage([payload.title, payload.body, payload.seo_description, ...options].filter(Boolean).join(' '));
@@ -1730,6 +1759,7 @@ async function createPost(form) {
             const post = normalizePost({
                 id: `local-${Date.now()}`,
                 type,
+                brand: payload.brand_slug ? {slug: payload.brand_slug, status: 'pending'} : null,
                 title: payload.title,
                 body: payload.body,
                 category: payload.category,
@@ -1773,6 +1803,7 @@ async function createPost(form) {
     } catch (error) {
         showMessage(form, error.message);
     } finally {
+        delete form.dataset.saving;
         if (submit.isConnected) {
             submit.disabled = false;
             submit.classList.remove('is-loading');
@@ -1785,6 +1816,37 @@ function findPostById(postId) {
     return allPosts.find((item) => item.id === String(postId))
         || allPosts.find((item) => item.sourcePost?.id === String(postId))?.sourcePost
         || null;
+}
+
+function updatePostCopies(id, values) {
+    for (const post of [...state.posts, ...(state.profileData?.posts || [])]) {
+        if (String(post.id) === String(id)) Object.assign(post, values);
+        if (String(post.sourcePost?.id) === String(id)) Object.assign(post.sourcePost, values);
+    }
+}
+function setReactionBusy(id, busy, kind = 'react') {
+    root.querySelectorAll(`[data-action="${kind}"]`).forEach(button => {
+        if (button.dataset.postId === String(id)) {
+            button.disabled = busy;
+            button.setAttribute('aria-busy', String(busy));
+        }
+    });
+}
+function refreshReactionViews(post) {
+    // Only replace reaction controls: comment drafts, images and focus stay intact.
+    root.querySelectorAll('.post-reactions').forEach(group => {
+        if (group.querySelector('[data-post-id]')?.dataset.postId !== String(post.id)) return;
+        const focused = group.contains(document.activeElement) ? document.activeElement : null;
+        const action = focused?.dataset.action;
+        const reaction = focused?.dataset.reaction;
+        const template = document.createElement('template'); template.innerHTML = renderReactions(post);
+        const next = template.content.firstElementChild;
+        group.replaceWith(next);
+        if (action) next.querySelector(reaction ? `[data-reaction="${reaction}"]` : `[data-action="${action}"]`)?.focus({preventScroll:true});
+    });
+    renderedRegions.delete('page-content');
+    // A later card reconciliation must not mistake the original markup for current state.
+    root.querySelectorAll('.post-card').forEach(card => { if (card.querySelector(`[data-action="react"]`)?.dataset.postId === String(post.id)) delete card.renderedHTML; });
 }
 
 function refreshPostView() {
@@ -1852,53 +1914,37 @@ async function voteLaunch(postId, value) {
 }
 
 async function toggleLike(postId) {
-    if (!state.currentUser) {
-        openAuth('register');
-        return;
-    }
+    if (!state.currentUser) return openAuth('register');
     const post = findPostById(postId);
-    if (!post) return;
+    if (!post || state.pendingLikes.has(String(postId))) return;
+    state.pendingLikes.add(String(postId)); setReactionBusy(postId, true, 'like');
     try {
-        if (apiEnabled) {
-            const result = await apiRequest(`/api/posts/${encodeURIComponent(postId)}/like`, 'POST', {});
-            post.liked = result.liked;
-            post.likes = Number(result.likes);
-        } else {
-            post.liked = !post.liked;
-            post.likes = Math.max(0, Number(post.likes || 0) + (post.liked ? 1 : -1));
-        }
-        persistDemo();
-        refreshPostView();
-    } catch (error) {
-        showToast(error.message);
-    }
+        const result = apiEnabled ? await apiRequest(`/api/posts/${encodeURIComponent(postId)}/like`, 'POST', {}) : {liked:!post.liked, likes:Math.max(0, Number(post.likes || 0) + (post.liked ? -1 : 1))};
+        updatePostCopies(postId, {liked:result.liked, likes:Number(result.likes)});
+        persistDemo(); refreshReactionViews(post);
+    } catch (error) { showToast(error.message); }
+    finally { state.pendingLikes.delete(String(postId)); setReactionBusy(postId, false, 'like'); }
 }
 
 async function reactToPost(postId, reaction) {
     if (!state.currentUser) return openAuth('register');
     const post = findPostById(postId);
-    if (!post || !['celebrate', 'helpful', 'support'].includes(reaction)) return;
+    if (!post || !REACTIONS.some(item=>item.key===reaction) || state.pendingReactions.has(String(postId))) return;
+    state.pendingReactions.add(String(postId)); setReactionBusy(postId, true);
     try {
-        if (apiEnabled) {
-            const result = await apiRequest(`/api/posts/${encodeURIComponent(postId)}/react`, 'POST', { reaction });
-            post.reactions = result.reactions;
-            post.myReaction = result.myReaction;
-        } else {
-            const counts = { ...(post.reactions || {}) };
+        let result;
+        if (apiEnabled) result = await apiRequest(`/api/posts/${encodeURIComponent(postId)}/react`, 'POST', { reaction });
+        else {
+            const counts = {...post.reactions};
             if (post.myReaction) counts[post.myReaction] = Math.max(0, Number(counts[post.myReaction] || 0) - 1);
-            if (post.myReaction !== reaction) {
-                counts[reaction] = Number(counts[reaction] || 0) + 1;
-                post.myReaction = reaction;
-            } else {
-                post.myReaction = null;
-            }
-            post.reactions = counts;
+            const selected = post.myReaction === reaction ? null : reaction;
+            if (selected) counts[selected] = Number(counts[selected] || 0) + 1;
+            result = {reactions:counts, myReaction:selected};
         }
-        persistDemo();
-        refreshPostView();
-    } catch (error) {
-        showToast(error.message);
-    }
+        updatePostCopies(postId, {reactions:result.reactions, myReaction:result.myReaction});
+        persistDemo(); refreshReactionViews(post);
+    } catch (error) { showToast(error.message); }
+    finally { state.pendingReactions.delete(String(postId)); setReactionBusy(postId, false); }
 }
 
 async function repostPost(postId) {
@@ -2006,7 +2052,7 @@ async function submitProfile(form) {
                 avatarChoice: chosenAvatar,
                 coverChoice,
                 avatarUploaded: hasAvatar || (keepPhoto && state.currentUser.avatarUploaded),
-                avatarUrl: uploadedAvatar || (keepPhoto ? state.currentUser.avatarUrl : `/avatars/${chosenAvatar}.svg`),
+                avatarUrl: uploadedAvatar || (keepPhoto ? state.currentUser.avatarUrl : avatarPath(chosenAvatar)),
             };
             writeStorage(STORAGE.user, state.currentUser);
         }
@@ -2190,7 +2236,7 @@ async function logout() {
     state.safetyLoadedFor = null;
     state.blockedUsers = []; state.reportedMessages = []; state.messageDrafts = {}; state.chatDraft = '';
     state.messagePeer = null; state.selectedMessageUser = null; state.threadRequest++;
-    state.catalogueLoaded = !apiEnabled; state.feedLoaded = !apiEnabled; state.rankingsLoaded = false; state.rankings = null;
+    state.feedLoaded = !apiEnabled; state.rankingsLoaded = false; state.rankings = null;
     state.currentUser = null;
     state.commentingId = null;
     state.conversations = [];
@@ -2280,25 +2326,27 @@ root.addEventListener('click', async (event) => {
         else skills.push(name);
         input.value = skills.join(', '); syncSkillPicker(form); return;
     }
-    if (action === 'rate-model') return rateModel(target.dataset.modelId, Number(target.dataset.score));
     if (action === 'clear-upload') {
         const input = target.closest('[data-upload]').querySelector('input[type="file"]');
         input.value = ''; syncUpload(input);
         if (input.name === 'avatar') {
             const form = input.closest('form');
             const choice = form.querySelector('[name="avatar_choice"]:checked')?.value;
-            form.querySelector('.settings-avatar').src = !choice || choice === 'keep' ? state.currentUser.avatarUrl : `/avatars/${choice}.svg`;
+            form.querySelector('.settings-avatar').src = !choice || choice === 'keep' ? (avatarAsset(state.currentUser.avatarUrl)?.large || state.currentUser.avatarUrl) : avatarPath(choice, 'large');
         }
         input.focus();
         return;
     }
+    if (action === 'avatar-group') { selectAvatarGroup(target.closest('.avatar-picker'), target.dataset.group); return; }
     if (action === 'expand-avatars' || action === 'expand-skills') {
         const expanded = target.getAttribute('aria-expanded') !== 'true';
         target.setAttribute('aria-expanded', String(expanded));
         const fieldset = target.closest('fieldset');
         if (action === 'expand-avatars') {
-            fieldset.querySelectorAll('[data-avatar-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.avatarIndex) >= 8 && !choice.querySelector('input').checked; });
-            target.textContent = expanded ? 'Show fewer characters' : `Meet all ${AVATAR_CHOICES.length} characters`;
+            const panel = target.closest('[data-avatar-group]');
+            panel.querySelectorAll('[data-avatar-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.avatarIndex) >= 8 && !choice.querySelector('input').checked; });
+            hydrateAvatarGroup(panel);
+            target.textContent = expanded ? 'Show fewer characters' : 'Meet all 12 characters';
         } else {
             fieldset.querySelectorAll('[data-skill-index]').forEach(choice => { choice.hidden = !expanded && Number(choice.dataset.skillIndex) >= 16 && choice.getAttribute('aria-pressed') !== 'true'; });
             target.textContent = expanded ? 'Show fewer skills' : `Browse all ${SKILLS.length} skills`;
@@ -2306,14 +2354,7 @@ root.addEventListener('click', async (event) => {
         return;
     }
     if (action === 'reload-rankings') return loadRankings();
-    if (action === 'reload-models') { state.catalogueLoaded = false; return loadCatalogue(); }
     if (action === 'reload-feed') { state.feedError = ''; if (state.initialPostId) return loadSinglePost(state.initialPostId); state.feedLoaded = false; return loadServerFeed(); }
-    if (action === 'edit-catalogue-model' && state.currentUser?.isAdmin && !apiEnabled) { state.editingModel = target.dataset.modelId; renderApp(); return; }
-    if (action === 'archive-catalogue-model' && state.currentUser?.isAdmin && !apiEnabled) {
-        const model = state.catalogue.find(item=>String(item.id)===target.dataset.modelId);
-        if (model) model.isActive = model.isActive === false;
-        writeStorage('vibedock-preview-models', state.catalogue); renderApp(); return;
-    }
     if (action === 'go-page') {
         event.preventDefault();
         return navigateTo(target.dataset.page || 'home');
@@ -2386,11 +2427,8 @@ root.addEventListener('click', async (event) => {
         state.authMode = target.dataset.mode || 'register';
         return renderApp();
     }
+    if (action === 'demo-social') return showToast('Social sign-in needs a configured live server. Use the demo account below.');
     if (action === 'open-compose') return openCompose(target.dataset.type || 'discussion');
-    if (action === 'compose-type') {
-        state.composeType = target.dataset.type || 'discussion';
-        return renderApp();
-    }
     if (action === 'add-option') {
         const fields = root.querySelector('.poll-option-fields');
         if (fields && fields.querySelectorAll('input').length < 5) {
@@ -2452,7 +2490,7 @@ root.addEventListener('click', async (event) => {
         const form = target.closest('form');
         if (!form) return;
         const current = form.querySelector('input[name="avatar_choice"]:checked')?.value;
-        const pool = AVATAR_CHOICES.map((choice) => choice.key).filter((key) => key !== current);
+        const pool = AVATAR_CHOICES.filter(choice => choice.group === form.querySelector('.avatar-picker').dataset.activeAvatarGroup).map(choice => choice.key).filter(key => key !== current);
         const pick = pool[Math.floor(Math.random() * pool.length)];
         const input = form.querySelector(`input[name="avatar_choice"][value="${pick}"]`);
         if (input) {
@@ -2460,6 +2498,7 @@ root.addEventListener('click', async (event) => {
             input.dispatchEvent(new Event('change', {bubbles:true}));
             form.querySelectorAll('.avatar-choice').forEach((element) => element.classList.toggle('is-selected', element.contains(input)));
             if (input.closest('.avatar-choice')) input.closest('.avatar-choice').hidden = false;
+            hydrateAvatarGroup(input.closest('[data-avatar-group]'));
             input.closest('.avatar-choice')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         }
         return;
@@ -2477,6 +2516,11 @@ root.addEventListener('click', async (event) => {
         return;
     }
     if (action === 'share') return sharePost(target.dataset.postId);
+    if (action === 'demo-verify-brand' && !apiEnabled && state.currentUser?.isAdmin) {
+        const post = state.posts.find(post=>post.id===target.dataset.postId);
+        if (post?.brand) { post.brand.status = post.brand.status === 'verified' ? 'pending' : 'verified'; persistDemo(); renderApp(); showToast('Demo verification updated.'); }
+        return;
+    }
     if (action === 'admin-hide-post') {
         const post = findPostById(target.dataset.postId);
         if (!post || !state.currentUser?.isAdmin) return;
@@ -2490,17 +2534,17 @@ root.addEventListener('click', async (event) => {
 });
 
 root.addEventListener('input', (event) => {
-    if (event.target.matches('[data-model-search]')) {
-        state.modelQuery = event.target.value;
-        const template = document.createElement('template');
-        template.innerHTML = renderModelsPage();
-        root.querySelector('.catalogue-grid')?.replaceWith(template.content.querySelector('.catalogue-grid'));
-        root.querySelector('.models-page > .route-empty')?.remove();
-        const empty = template.content.querySelector('.models-page > .route-empty');
-        if (empty) root.querySelector('.models-page').append(empty);
-        renderedRegions.delete('page-content');
-        return;
+    if (event.target.closest('.launch-studio .compose-form')) {
+        const title = root.querySelector('[data-launch-title]');
+        const description = root.querySelector('[data-launch-description]');
+        const domain = root.querySelector('[data-launch-domain]');
+        const form = event.target.closest('form');
+        if (title) title.textContent = form.elements.title.value || 'Your project name';
+        if (description) description.textContent = form.elements.body.value.slice(0, 180) || 'Something worth sharing.';
+        const url = safeUrl(form.elements.project_url.value);
+        if (domain) domain.textContent = url ? new URL(url).hostname : 'your-project.com';
     }
+
     if (event.target.matches('.profile-settings-form input[name="name"]')) {
         const name = root.querySelector('[data-profile-name]'); if (name) name.textContent = event.target.value;
     }
@@ -2548,7 +2592,7 @@ root.addEventListener('change', (event) => {
         const upload = event.target.closest('form').querySelector('[name="avatar"]');
         if (upload) { upload.value = ''; syncUpload(upload); }
         const image = document.querySelector('.settings-avatar');
-        if (image) image.src = event.target.value === 'keep' ? state.currentUser.avatarUrl : `/avatars/${event.target.value}.svg`;
+        if (image) image.src = event.target.value === 'keep' ? (avatarAsset(state.currentUser.avatarUrl)?.large || state.currentUser.avatarUrl) : avatarPath(event.target.value, 'large');
 
         const form = event.target.closest('form');
         if (form) form.querySelectorAll('.avatar-choice').forEach((element) => element.classList.toggle('is-selected', element.contains(event.target)));
@@ -2559,7 +2603,7 @@ root.addEventListener('change', (event) => {
         if (!file) {
             const form = input.closest('form');
             const choice = form.querySelector('[name="avatar_choice"]:checked')?.value;
-            form.querySelector('.settings-avatar').src = !choice || choice === 'keep' ? state.currentUser.avatarUrl : `/avatars/${choice}.svg`;
+            form.querySelector('.settings-avatar').src = !choice || choice === 'keep' ? (avatarAsset(state.currentUser.avatarUrl)?.large || state.currentUser.avatarUrl) : avatarPath(choice, 'large');
             return;
         }
         void readFileAsDataUrl(file).then(url => {
@@ -2582,14 +2626,13 @@ root.addEventListener('submit', async (event) => {
     const form = event.target;
     if (!form.matches('form[data-form]')) return;
     event.preventDefault();
-    if (form.dataset.form === 'model-admin' && state.currentUser?.isAdmin && !apiEnabled) {
-        const data = new FormData(form);
-        const name = String(data.get('name')).trim();
-        if (state.catalogue.some(model=>model.name.toLowerCase()===name.toLowerCase() && String(model.id)!==state.editingModel)) return showMessage(form,'That model already exists.');
-        const existing = state.catalogue.find(model=>String(model.id)===state.editingModel);
-        const model = {id:existing?.id || `model-${Date.now()}`, name, provider:String(data.get('provider')).trim(), description:String(data.get('description')).trim(), websiteUrl:safeUrl(data.get('website_url')), isActive:existing?.isActive ?? true};
-        if (existing) Object.assign(existing, model); else state.catalogue.push(model);
-        writeStorage('vibedock-preview-models',state.catalogue); state.editingModel=null; renderApp(); showToast('Catalogue saved in this demo.'); return;
+    if (form.dataset.form === 'demo-badge' && !apiEnabled && state.currentUser?.isAdmin) {
+        const data = new FormData(form); const id = String(data.get('user')); const badge = String(data.get('badge'));
+        if (!BADGES.some(item=>item.key===badge && item.source==='admin')) return;
+        const awards = readStorage('vibedock-preview-badges', {});
+        const keys = new Set(awards[id] || []);
+        if (data.get('action') === 'award') keys.add(badge); else keys.delete(badge);
+        awards[id] = [...keys]; writeStorage('vibedock-preview-badges', awards); showToast('Demo badge updated.'); return;
     }
     if (form.dataset.form === 'auth') await createAuth(form);
     if (form.dataset.form === 'compose') await createPost(form);
@@ -2610,7 +2653,7 @@ root.addEventListener('keydown', (event) => {
 
 document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    const reactions = document.querySelector('.reaction-picker[open], .message-actions[open]');
+    const reactions = document.querySelector('.message-actions[open]');
     if (reactions) {
         reactions.open = false;
         reactions.querySelector('summary')?.focus();
@@ -2634,7 +2677,7 @@ document.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('click', (event) => {
-    document.querySelectorAll('.reaction-picker[open], .message-actions[open]').forEach((picker) => {
+    document.querySelectorAll('.message-actions[open]').forEach((picker) => {
         if (!picker.contains(event.target)) picker.open = false;
     });
     if (state.menuPostId && !event.target.closest('.post-more-wrap')) {
@@ -2646,14 +2689,14 @@ document.addEventListener('click', (event) => {
 
 window.addEventListener('popstate', () => {
     const parts = parseRoute(window.location.pathname);
-    const page = routePages[parts[0]] || 'home';
+    const page = pageForRoute(parts);
     if (state.page === 'profile' && page !== 'profile') {
         state.profileData = null;
         state.profileLoadedFor = null;
     }
     state.page = page;
     state.profileUsername = page === 'profile' ? parts[1] : null;
-    state.initialPostId = parts[0] === 'posts' ? parts[1] : null;
+    state.initialPostId = parts[0] === 'posts' ? parts[1] : parts[0] === 'brands' ? state.posts.find(post => post.brand?.slug === parts[1])?.id || null : null;
     state.modal = null;
     state.mobileMenu = false;
     state.mobileSearch = false;
@@ -2662,3 +2705,17 @@ window.addEventListener('popstate', () => {
 });
 
 renderApp();
+
+root.addEventListener('error', event => {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement) || image.dataset.fallback) return;
+    image.dataset.fallback = 'true';
+    if (image.closest('.avatar') || image.classList.contains('settings-avatar')) { image.removeAttribute('srcset'); image.src = avatarPath('fluent-robot'); }
+    else {
+        const notice = document.createElement('span');
+        notice.className = 'image-unavailable'; notice.setAttribute('role', 'img');
+        notice.setAttribute('aria-label', image.alt || 'Image unavailable');
+        notice.textContent = image.closest('.launch-brand-tile, .ranking-launch-logo') ? '↗' : 'Image unavailable';
+        image.replaceWith(notice);
+    }
+}, true);

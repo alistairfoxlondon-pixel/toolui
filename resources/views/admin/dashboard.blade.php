@@ -33,7 +33,7 @@
             <a class="admin-brand" href="/"><svg class="admin-icon"><use href="#i-shield"/></svg> VibeDock <span>Admin</span></a>
             <p class="admin-sidebar-label">Manage</p>
             <a class="admin-sidebar-link active" href="/admin"><svg class="admin-icon"><use href="#i-monitoring"/></svg> Overview</a>
-            <a class="admin-sidebar-link" href="#models">AI model catalogue</a>
+            <a class="admin-sidebar-link" href="#brands">Brand verification</a>
             <a class="admin-sidebar-link" href="#reports"><svg class="admin-icon"><use href="#i-flag"/></svg> Reports <span>{{ $openReportCount }}</span></a>
             <a class="admin-sidebar-link" href="#members"><svg class="admin-icon"><use href="#i-group"/></svg> Members</a>
             <a class="admin-sidebar-link" href="#posts"><svg class="admin-icon"><use href="#i-forum"/></svg> Posts and launches</a>
@@ -42,13 +42,12 @@
             <a class="admin-return" href="/"><svg class="admin-icon"><use href="#i-logout"/></svg> Return to community</a>
         </aside>
         <main class="admin-main">
-            <header class="admin-header"><div><h1>Community overview</h1><span>Members, posts, launches, models, reports, and chat moderation.</span></div><div class="admin-user">{{ auth()->user()->name }} <span>Administrator</span></div></header>
+            <header class="admin-header"><div><h1>Community overview</h1><span>Members, posts, launches, badges, reports, and chat moderation.</span></div><div class="admin-user">{{ auth()->user()->name }} <span>Administrator</span></div></header>
             @if (session('status'))<div class="admin-flash">{{ session('status') }}</div>@endif
             <section class="admin-stats">
                 <article><span>Members</span><strong>{{ number_format($memberCount) }}</strong><small>{{ number_format($activeMemberCount) }} active</small></article>
                 <article><span>Posts</span><strong>{{ number_format($postCount) }}</strong><small>All types</small></article>
                 <article><span>Launches</span><strong>{{ number_format($launchCount) }}</strong><small>Project showcases</small></article>
-                <article><span>AI models</span><strong>{{ number_format($modelCount) }}</strong><small>Model shares</small></article>
                 <article><span>Open reports</span><strong>{{ number_format($openReportCount) }}</strong><small>Needs review</small></article>
                 <article><span>Chat messages</span><strong>{{ number_format($chatMessageCount) }}</strong><small>Group chat</small></article>
             </section>
@@ -56,24 +55,14 @@
             @if ($errors->any())
                 <div class="admin-notice" role="alert">{{ $errors->first() }}</div>
             @endif
-            <section class="admin-panel" id="models"><div class="admin-panel-heading"><div><h2>AI model catalogue</h2><p>Members rate these models for vibe coding. Only administrators add or edit entries.</p></div></div>
-                <details class="model-editor"><summary>Add a model</summary><form class="model-admin-form" method="POST" action="{{ route('admin.models.store') }}">@csrf
-                    <label>Model name<input name="name" maxlength="100" required placeholder="Exact model or version"></label>
-                    <label>Provider<input name="provider" maxlength="80" required></label>
-                    <label class="wide">Description<textarea name="description" maxlength="500" rows="2" required></textarea></label>
-                    <label class="wide">Official URL<input name="website_url" type="url" maxlength="2048" placeholder="https://"></label>
-                    <input type="hidden" name="is_active" value="1"><button class="admin-button primary">Add to catalogue</button>
-                </form></details>
-                @forelse ($aiModels as $model)
-                    <details class="model-editor"><summary>{{ $model->name }} · {{ $model->provider }} · {{ $model->ratings_count }} ratings {{ $model->is_active ? '' : '· Archived' }}</summary><form class="model-admin-form" method="POST" action="{{ route('admin.models.update', $model) }}">@csrf @method('PUT')
-                        <label>Model name<input name="name" value="{{ $model->name }}" maxlength="100" required></label><label>Provider<input name="provider" value="{{ $model->provider }}" maxlength="80" required></label>
-                        <label class="wide">Description<textarea name="description" maxlength="500" rows="2" required>{{ $model->description }}</textarea></label>
-                        <label class="wide">Official URL<input type="url" name="website_url" value="{{ $model->website_url }}" maxlength="2048"></label>
-                        <label>Status<select name="is_active"><option value="1" @selected($model->is_active)>Published</option><option value="0" @selected(!$model->is_active)>Archived</option></select></label><button class="admin-button primary">Save model</button>
-                    </form></details>
-                @empty
-                    <div class="admin-empty">Add your first model. Community ratings begin at zero.</div>
-                @endforelse
+            <section class="admin-panel" id="brands"><div class="admin-panel-heading"><div><h2>Brand verification</h2><p>Independently confirm ownership of the linked project before granting a green tick. Verification is not an endorsement. Reject or return to pending to revoke a tick.</p></div></div>
+                @forelse ($brands as $brand)
+                    <article class="admin-report"><div class="admin-report-main"><strong>{{ '@'.$brand->slug }}</strong><span>{{ $brand->owner?->name }} · {{ $brand->post?->title }}</span>
+                        <a href="{{ route('brands.show', $brand->slug) }}" target="_blank" rel="noopener">Review launch and project link</a><small>Status: {{ $brand->status }}</small>
+                    </div><form class="admin-recognition-control" method="POST" action="{{ route('admin.brands.review', $brand) }}">@csrf @method('PATCH')
+                        <label>Verification<select name="status"><option value="pending" @selected($brand->status === 'pending')>Pending review</option><option value="verified" @selected($brand->status === 'verified')>Verified ownership</option><option value="rejected" @selected($brand->status === 'rejected')>Not verified</option></select></label><button class="admin-button primary">Save review</button>
+                    </form></article>
+                @empty <div class="admin-empty">No brand claims yet.</div> @endforelse
             </section>
 
             <section class="admin-panel" id="message-reports"><div class="admin-panel-heading"><h2>Message reports</h2><span>{{ $messageReports->count() }} open</span></div>
@@ -96,6 +85,10 @@
                 <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Member</th><th>Email</th><th>Access</th><th>Account</th><th>Controls</th></tr></thead><tbody>
                     @foreach ($users as $member)
                         <tr><td><strong>{{ $member->name }}</strong><small>{{ '@'.$member->username }}</small></td><td>{{ $member->email }}</td><td>{{ $member->is_admin ? 'Administrator' : 'Member' }}</td><td>{{ $member->is_active ? 'Active' : 'Disabled' }}</td><td class="admin-row-actions">
+                            <form class="admin-recognition-control" method="POST" action="{{ route('admin.users.badge', $member) }}">@csrf @method('PATCH')
+                                <label>Member badge<select name="badge">@foreach (\App\Support\BadgeLibrary::ADMIN as $key => $label)<option value="{{ $key }}">{{ $label }}{{ $member->memberBadges->contains('badge', $key) ? ' (awarded)' : '' }}</option>@endforeach</select></label>
+                                <label>Action<select name="action"><option value="award">Award</option><option value="revoke">Revoke</option></select></label><button class="admin-button">Update badge</button>
+                            </form>
                             @if ($member->id !== auth()->id())
                                 <form method="POST" action="{{ route('admin.users.role', $member) }}">@csrf @method('PATCH')<input type="hidden" name="is_admin" value="{{ $member->is_admin ? 0 : 1 }}"><button class="admin-button" type="submit">{{ $member->is_admin ? 'Remove admin' : 'Make admin' }}</button></form>
                                 <form method="POST" action="{{ route('admin.users.status', $member) }}">@csrf @method('PATCH')<input type="hidden" name="is_active" value="{{ $member->is_active ? 0 : 1 }}"><button class="admin-button {{ $member->is_active ? 'danger' : '' }}" type="submit">{{ $member->is_active ? 'Disable' : 'Restore' }}</button></form>

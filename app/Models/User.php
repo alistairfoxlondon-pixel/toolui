@@ -44,6 +44,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function memberBadges(): HasMany
+    {
+        return $this->hasMany(MemberBadge::class);
+    }
+
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);

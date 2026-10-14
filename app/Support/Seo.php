@@ -9,7 +9,14 @@ namespace App\Support;
 final class Seo
 {
     private const PAGES = [
-        'models' => ['AI Model Ratings for Vibe Coding | VibeDock', 'Compare an admin-curated AI model catalogue. Rate the models you have used for vibe coding and see community scores.', '/models'],
+        'polls' => ['Community polls | VibeDock', 'Compare tools and get feedback from real makers.', '/polls'],
+        'badges' => ['Member badges | VibeDock', 'Milestones and recognition for your contributions.', '/badges'],
+        'help' => ['Help and features | VibeDock', 'Find your way around VibeDock.', '/help'],
+        'create-post' => ['Create a post | VibeDock', 'Share with the community.', '/create/post'],
+        'create-question' => ['Create a question | VibeDock', 'Share with the community.', '/create/question'],
+        'create-poll' => ['Create a poll | VibeDock', 'Share with the community.', '/create/poll'],
+        'create-launch' => ['Create a launch | VibeDock', 'Share with the community.', '/create/launch'],
+
         'feed' => ['Community Feed | VibeDock', 'Share a build, ask a coding question, and gather feedback with community polls.', '/feed'],
         'profile-edit' => ['Edit Your Profile | VibeDock', 'Edit your maker profile, skills, avatar, and cover.', '/settings/profile'],
         'launches' => ['Launches — community projects', 'Discover tools, apps, and websites launched by VibeDock makers.', '/launches'],
@@ -37,6 +44,6 @@ final class Seo
 
     public static function home(): array
     {
-        return ['title' => 'VibeDock | Build together', 'description' => 'Launch your vibe-coded app, find fellow makers, ask questions, and rate the AI models you build with.', 'path' => '/'];
+        return ['title' => 'VibeDock | Build together', 'description' => 'Launch your vibe-coded app, find fellow makers, ask questions, and gather real opinions with community polls.', 'path' => '/'];
     }
 }

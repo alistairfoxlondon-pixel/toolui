@@ -157,7 +157,7 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, .modal-dialog::-webkit-scrollb
 }
 .feature-art.scene-image img { object-fit: contain; }
 .feature-launch .scene-image { background: #D8E8CD; }
-.feature-models .scene-image { background: #E2E1F6; }
+.feature-badges .scene-image { background: #E2E1F6; }
 .feature-feedback .scene-image { background: #F1E8D4; }
 .profile-settings-form .avatar-choice { position: relative; }
 .profile-settings-form .avatar-choice input { position: absolute; top: 9px; right: 9px; z-index: 1; width: 16px; height: 16px; }

@@ -10,6 +10,7 @@ FONT = ROOT / "node_modules/material-symbols/material-symbols-rounded.woff2"
 
 # key used in our app -> Material Symbols glyph name
 ICONS = {
+    "arrow_back": "arrow_back", "anchor": "anchor", "star": "star",
     "search": "search", "add": "add", "arrow_forward": "arrow_forward",
     "open_in_new": "open_in_new", "arrow_upward": "arrow_upward",
     "arrow_downward": "arrow_downward", "monitoring": "monitoring",

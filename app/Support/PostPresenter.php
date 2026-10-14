@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Post;
+use App\Models\PostReaction;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -16,6 +17,7 @@ class PostPresenter
     public static function relations(?User $viewer): array
     {
         $relations = [
+            'brand',
             'author:id,name,username,bio,profession,skills,website,avatar_path,avatar_choice,cover_choice,is_admin',
             'votes:id,post_id,user_id,option_index',
             'launchVotes:id,post_id,user_id,vote',
@@ -43,7 +45,7 @@ class PostPresenter
             }
         }
 
-        $reactionCounts = ['celebrate' => 0, 'helpful' => 0, 'support' => 0];
+        $reactionCounts = array_fill_keys(PostReaction::types(), 0);
         $myReaction = null;
         foreach ($post->reactions as $reaction) {
             if (array_key_exists($reaction->reaction, $reactionCounts)) {
@@ -75,6 +77,7 @@ class PostPresenter
 
         return [
             'id' => (string) $post->id,
+            'brand' => $post->relationLoaded('brand') && $post->brand ? ['slug' => $post->brand->slug, 'status' => $post->brand->status] : null,
             'type' => $post->type,
             'title' => $post->title,
             'seoDescription' => $post->seo_description,
