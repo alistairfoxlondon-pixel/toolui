@@ -450,6 +450,7 @@ function renderHero() {
                 </div>
             </div>
             <div class="hero-visual" aria-hidden="true">
+                <img class="hero-image" src="/images/hero-maker.webp" alt="" width="960" height="960" decoding="async">
                 <div class="hero-card">
                     <div class="hero-card-top">${icon('smart_toy', 20)}<span>New AI model shared</span>${icon('check_circle', 18, 'hero-card-check')}</div>
                     <div class="hero-model-row">

@@ -61,6 +61,7 @@ check('app shell renders', Boolean($('#app')) && $('#app').innerHTML.length > 50
 check('header renders', Boolean($('.site-header')));
 check('hero renders', Boolean($('.hero')));
 check('seed posts render', $$('.post-card').length >= 5);
+check('hero image renders with illustration', Boolean($('.hero-image')) && /hero-maker\.webp$/.test($('.hero-image').getAttribute('src') || ''));
 check('icons render (Material Symbols paths)', $$('svg.icon path').length > 10);
 check('document title set', /VibeDock/.test(document.title));
 
