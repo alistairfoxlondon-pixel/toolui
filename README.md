@@ -1,6 +1,6 @@
 # VibeDock
 
-VibeDock is a Laravel community for people who make AI tools, apps, and creative projects. Members can publish discussions, questions, polls, launches, and AI model shares (with free, freemium, or paid access tags); upload post images and project logos; vote on launches; build professional profiles with library avatars and predefined cover designs; follow and friend other makers; send private messages; and join a shared community chat. Administrators can review reports, feature or hide posts, manage accounts, posts, and comments, and remove group chat messages.
+VibeDock is a Laravel community for people who make AI tools, apps, and creative projects. Members can publish discussions, questions, polls, and launches with SEO descriptions; upload post images and project logos; vote on launches; build professional profiles with library avatars and predefined cover designs; follow and friend other makers; send private messages; and join a shared community chat. AI models are managed only by administrators in a separate catalogue, with one editable rating per member. Administrators can review reports, feature or hide posts, manage accounts, posts, and comments, and remove group chat messages.
 
 The information architecture and content are original. The linked repository informed visual qualities only. The interface uses a mobile first layout, solid color surfaces, accessible controls, Material Symbols icons, and responsive navigation.
 
@@ -131,17 +131,17 @@ Report snapshots contain personal data. The operator must define retention, acce
 
 ### Skills and validation
 
-Profile editing includes 60 searchable skill suggestions, each with an original inline vector icon. Members may select up to 12 skills or enter custom skills (32 characters each). Server validation retains the same limits.
+Profile editing includes 80 searchable skill suggestions, each with an original inline vector icon. Members may select up to 12 skills or enter custom skills (32 characters each). Server validation retains the same limits.
 
-`npm test` covers sign-in, direct-message persistence, community sending, automatic rejection, report/block/unblock flows, and illustrated skill selection. `tests/Feature/MessageSafetyTest.php` covers Laravel participant isolation, report authorization, bidirectional blocking, moderation, admin review, and latest-message ordering. Run `php artisan test` in a PHP/Laravel environment. This sandbox has no PHP runtime: PHP source was syntax-parsed, but the Laravel feature suite and migrations have **not** been executed here.
+`npm test` covers sign-in, direct-message persistence, community sending, automatic rejection, report/block/unblock flows, and illustrated skill selection. `tests/Feature/MessageSafetyTest.php` covers Laravel participant isolation, report authorization, bidirectional blocking, moderation, admin review, and latest-message ordering. Run `php artisan test` in a PHP/Laravel environment. This sandbox has no PHP runtime: the Laravel feature suite and migrations have **not** been executed here.
 
 ## Typography and artwork
 
-The primary font stack is `Telenor Evolution`, `Telenor`, then the self-hosted, OFL-licensed Figtree variable font. **The exact Grameenphone/Telenor font is not bundled**: a licensed file was not supplied and redistribution rights could not be verified. Browsers without Telenor installed render Figtree, not an imitation renamed as Telenor.
+The primary font stack is `Telenor GP` (genuine local/licensed faces), `Telenor Evolution`, `Telenor`, then the self-hosted, OFL-licensed Figtree variable font. **The exact Grameenphone/Telenor font is not bundled**: a licensed file was not supplied and redistribution rights could not be verified. Browsers without Telenor installed render Figtree, not an imitation renamed as Telenor.
 
-To activate an appropriately licensed webfont for every visitor, add the WOFF2 files to `resources/fonts/` and define their actual weights/styles with `@font-face` in `resources/css/fonts.css`, using the family name `Telenor Evolution` and `font-display: swap`. Vite will fingerprint the files. Do not hotlink third-party font files or claim the fallback is Telenor.
+To activate appropriately licensed webfonts for every visitor, supply `Telenor-Regular.woff2`, `Telenor-Medium.woff2`, and `Telenor-Bold.woff2` in `public/fonts/telenor/`. Restart preview or rebuild production. The shared Vite plugin detects available files, adds versioned same-origin font URLs and `font-display: swap`, and does not request missing files. Deploy the font directory alongside `public/build`. See `public/fonts/telenor/README.md`. Do not hotlink third-party font files or claim the fallback is Telenor.
 
-The green-and-ink homepage uses an original AI-generated human illustration exported as background-free, responsive WebP assets (880px and 440px). The five small SVG illustrations and two-tone UI icons are original project assets reused across discovery, launches, models, rankings, and information pages. They are not copies of the supplied commercial reference packs; the reference image URLs could not be fetched in this environment.
+The green-and-ink homepage uses an original AI-generated human illustration exported as background-free, responsive WebP assets (880px and 440px). The SVG illustrations, including three larger launch/model/poll scenes, and two-tone UI icons are original project assets reused across discovery, launches, models, rankings, and information pages. They are not copies of the supplied commercial reference packs; the reference image URLs could not be fetched in this environment.
 
 The homepage keeps its hero under 30 words, using image-led navigation rather than repeated explanatory copy. About and Guidelines retain the fuller context. On phones, search expands on demand, a native feed filter exposes every category, and labeled composer controls remain visible. Post reactions use a keyboard-accessible disclosure to avoid crowded action rows.
 
@@ -158,9 +158,9 @@ npm run preview -- --port 5173
 
 Performance work in this redesign:
 - Removed the unused previous hero image, obsolete hero CSS, and unused bootstrap placeholder; retained backend files and functional routes.
-- Optimized inline SVG icon paths, reducing the production app JavaScript from approximately **174.5 kB to about 165 kB** (gzip **49.0 kB to about 48 kB**), including the catalogue, messaging safety UI, and 60 illustrated skills.
+- Inline SVG icon paths and self-hosted assets avoid third-party UI requests. Unchanged feed cards are reused instead of re-created, preserving decoded images, focus, and comment drafts.
 - Hero artwork is approximately **63 kB desktop / 22 kB mobile**, selected with `srcset` and `sizes`, with explicit dimensions and high loading priority. The old hero was 76 kB on all devices.
-- Decorative SVGs are under 1 kB each, cacheable, and lazy-loaded; fonts remain self-hosted with `font-display: swap` and unicode-range selection. No remote image/font requests are required.
+- Original SVG illustrations and resolution-independent character avatars are cacheable and lazy-loaded; fonts remain self-hosted with `font-display: swap` and unicode-range selection. No remote image/font requests are required.
 - Existing Apache compression and static-asset caching remain in `public/.htaccess`. Production performance should be measured on the deployed host; these asset-size improvements are not a promise about network speed or Core Web Vitals.
 
 The privacy and terms pages are operational starter copy. Review them with the site operator or legal adviser for the jurisdictions and data retention practices that apply before public launch.
@@ -169,6 +169,19 @@ The privacy and terms pages are operational starter copy. Review them with the s
 
 Migration `2026_10_14_000014_create_ai_model_catalogue.php` creates the admin-managed catalogue and unique member/model ratings, and adds launch SEO descriptions (160 characters). Run `php artisan migrate` before serving the updated application. Production starts with an empty catalogue: administrators create, edit, and archive entries at `/admin`. Archiving preserves ratings. Authenticated active members rate from 1–5; changing a score updates the existing rating. Legacy model-share posts are retained in storage but excluded from public discovery; members can publish posts, questions, polls, and launches instead.
 
-Profile settings use normal document scrolling, 60 illustrated skill suggestions, 16 original character avatars, and refreshed layered covers. Existing avatar choices and uploads remain supported. Demo catalogue management and ratings are browser-local simulations, not shared server data.
+Profile settings use normal document scrolling with a hidden scrollbar, 80 illustrated skill suggestions, 24 original character avatars, and eight refreshed layered gradient covers. Expandable pickers keep the default page compact; searching skills still searches the entire catalogue. Existing avatar choices and uploads remain supported. Demo catalogue management and ratings are browser-local simulations, not shared server data.
 
-Validation for this update: production frontend build and automated smoke/moderation tests passed; Chromium checks covered public routes at 320, 390, 768, 1024, and 1440 pixels, profile save/reload, and demo admin catalogue create/archive. The homepage axe scan found no tested WCAG A/AA violations. PHP sources were syntax-parsed only: **Laravel feature tests and migrations were not executed because this environment has no PHP runtime**. Run `php artisan test` in a configured PHP environment before deployment.
+Validation for this update: `npm test` covers the existing community flows plus request failures/retries, malformed URLs, single-post deep links and SEO, refreshed sign-in CSRF tokens, ranking double-click protection, retained comment drafts, profile double-save protection, and expandable pickers. Chromium checks covered six pages at 320, 390, 768, and 1440 pixels (24 responsive checks), profile save/reload, launch publishing, upvote/downvote/toggle, and poll publishing/voting. No horizontal overflow or JavaScript runtime errors were found in those checks. These checks do not guarantee a bug-free site.
+
+`tests/Feature/CommunityRefinementTest.php` adds backend coverage for login tokens, profile hydration, deep-link visibility, poll/URL validation, and non-multiplying engagement aggregates. **Laravel feature tests and migrations were not executed because this environment has no PHP runtime.** Run `php artisan test` in a configured PHP environment before deployment.
+
+## Performance and upload polish (no page redesign)
+
+- Removed 21 unreachable Material icon variants (original illustrated icons still render exactly as before). Icon and skill markup is memoized with bounded caches. The production application JS changed from 176.61 kB / 52.20 kB gzip to 170.02 kB / 51.37 kB gzip, including the new upload controls. These are bundle-size measurements, not measured production latency or Core Web Vitals.
+- Opening/closing dialogs no longer regenerates the underlying page/feed. Rankings no longer fetch an unused 60-post feed. Fingerprinted JS/CSS/font assets can use a one-year immutable Apache cache; HTML, private JSON, and ordinary uploads are excluded.
+- Feed/profile/ranking relations load only the current viewer's like membership rather than hydrating every liker. Database counts still reflect everyone, including on repost sources. Source counts are batch-loaded instead of calculated lazily per post.
+- Corrected avatar/cover stacking and removed the settings Save bar's overlapping sticky behavior. The page layout, spacing, artwork, and interactions otherwise remain unchanged.
+- Styled, keyboard-accessible upload labels replace native-looking file controls for photos, post images, and project logos. Selected filenames, file limits, Remove, and avatar preview/reset are supported. Preview SVG logos now show an explicit unsupported-preview message instead of silently disappearing; production SVG processing is unchanged.
+- Added stale-profile-response protection, profile return-navigation regression coverage, and clear errors for non-JSON success responses.
+
+Verification: frontend regression/smoke tests and production build pass. Chromium checks cover avatar visibility, file selection/removal/validation, and picker overlap at 320, 390, 768, and 1440 pixels, plus the existing 24 responsive community checks. Backend eager-loading assertions have been added but require `php artisan test` on a configured PHP environment; PHP is not installed in this sandbox. No licensed Telenor binaries have been supplied, so visitors without that font locally installed still use Figtree.

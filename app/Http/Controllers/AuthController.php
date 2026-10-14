@@ -22,12 +22,13 @@ class AuthController extends Controller
         ]);
 
         $data['username'] = Str::lower($data['username']);
-        $user = User::create($data);
+        $user = User::create(array_merge($data, ['avatar_choice' => 'orbit-ollie']));
         Auth::login($user);
         $request->session()->regenerate();
 
         return response()->json([
             'user' => $this->userPayload($user),
+            'csrfToken' => csrf_token(),
         ], 201);
     }
 
@@ -55,6 +56,7 @@ class AuthController extends Controller
 
         return response()->json([
             'user' => $this->userPayload($request->user()),
+            'csrfToken' => csrf_token(),
         ]);
     }
 

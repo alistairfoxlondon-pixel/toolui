@@ -61,7 +61,8 @@ check('hero image renders with illustration', Boolean($('.hero-image')) && /make
 check('four visual feature cards render', $$('.feature-card').length === 4);
 check('hero image has responsive source and priority', $('.hero-image').hasAttribute('srcset') && $('.hero-image').getAttribute('fetchpriority') === 'high');
 check('hero welcomes signed-out members', /Join the community/.test($('.hero-actions').textContent));
-check('landing contains illustrated assets', $$('.dock-illustration').length >= 5);
+check('landing contains three visual feature scenes', $$('.scene-image img').length === 3);
+check('landing explains the maker journey', Boolean($('.landing-journey')));
 check('hero stays under 30 words', $('.hero').textContent.trim().split(/\s+/).length <= 30);
 check('utility icons render (Material Symbols paths)', $$('svg.icon path').length > 10);
 check('document title set', /VibeDock/.test(document.title));
@@ -187,6 +188,21 @@ document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubb
 check('Escape closes reactions and restores focus', !openPicker.open && document.activeElement === openPicker.querySelector('summary'));
 
 
+console.log('stable feed updates');
+const stableCard = $('.post-card');
+click(stableCard.querySelector('[data-action="comment-toggle"]'));
+const draft = $('.comment-form input');
+type(draft, 'Keep my unfinished feedback');
+const otherCard = $$('.post-card').find(card => !card.contains(draft));
+const unchanged = $('.comment-form').closest('.post-card');
+click(otherCard.querySelector('[data-action="like"]'));
+await flush();
+check('unrelated vote keeps existing card nodes', unchanged === $('.comment-form').closest('.post-card'));
+check('unfinished comment survives updates', $('.comment-form input').value === 'Keep my unfinished feedback');
+click(unchanged.querySelector('[data-action="like"]'));
+await flush();
+check('same-post vote keeps comment draft', $('.comment-form input').value === 'Keep my unfinished feedback');
+
 console.log('community chat (signed in)');
 click($('[data-action="go-page"][data-page="community-chat"]'));
 await flush();
@@ -287,11 +303,21 @@ const editButton = $('[data-action="edit-profile"]');
 if (editButton) click(editButton);
 await flush();
 check('profile editor is a dedicated page', Boolean($('.profile-edit-page')) && window.location.pathname === '/settings/profile' && !$('.modal-backdrop'));
-check('60 illustrated skills available', $$('.skill-option .skill-illustration').length === 60);
+check('80 illustrated skills available', $$('.skill-option .skill-illustration').length === 80);
+check('skill choices have unique names', new Set($$('.skill-option').map(el=>el.dataset.skill)).size === 80);
+check('skills start compact without a scrollbox', $$('.skill-option:not([hidden])').length < 25);
+click($('[data-action="expand-skills"]'));
+check('all skills can be expanded', $$('.skill-option:not([hidden])').length === 80);
+click($('[data-action="expand-skills"]'));
+check('avatar cast starts compact', $$('.avatar-choice:not([hidden])').length < 10);
+click($('[data-action="expand-avatars"]'));
+check('all 24 original characters can be expanded', $$('.avatar-choice:not([hidden])').length === 24);
 click($('.skill-option[data-skill="React"]'));
 check('skill selection updates profile field', /React/.test($('input[name="skills"]').value) && $('.skill-option[data-skill="React"]').getAttribute('aria-pressed') === 'true');
 type($('[data-skill-search]'), 'Python');
 check('skill search filters choices', $$('.skill-option:not([hidden])').length === 1);
+type($('[data-skill-search]'), 'no-such-skill');
+check('skill search has helpful empty state', !$('.skill-empty').hidden);
 type($('[data-skill-search]'), '');
 check('cover picker lists 8 choices', $$('.cover-choice').length === 8);
 check('cover swatch classes emitted', $$('.cover-swatch-sunset, .cover-swatch-grape, .cover-swatch-ocean').length >= 3);

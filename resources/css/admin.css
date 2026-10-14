@@ -1,7 +1,7 @@
 /* VibeDock admin — green community theme */
 
 :root {
-    --admin-font: 'Telenor Evolution', 'Telenor', 'Figtree Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    --admin-font: 'Telenor GP', 'Telenor Evolution', 'Telenor', 'Figtree Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
     --admin-primary: #28724F;
     --admin-primary-hover: #1F5B3E;
     --admin-primary-soft: #EDF6E8;

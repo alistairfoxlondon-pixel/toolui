@@ -78,5 +78,45 @@
     "key": "spook-exe",
     "label": "Spook.exe",
     "group": "The cast"
+  },
+  {
+    "key": "midnight-moth",
+    "label": "Midnight Moth",
+    "group": "The cast"
+  },
+  {
+    "key": "ramen-ronin",
+    "label": "Ramen Ronin",
+    "group": "The cast"
+  },
+  {
+    "key": "cosmic-cat",
+    "label": "Cosmic Cat",
+    "group": "The cast"
+  },
+  {
+    "key": "moss-mage",
+    "label": "Moss Mage",
+    "group": "The cast"
+  },
+  {
+    "key": "sheriff-syntax",
+    "label": "Sheriff Syntax",
+    "group": "The cast"
+  },
+  {
+    "key": "neon-gecko",
+    "label": "Neon Gecko",
+    "group": "The cast"
+  },
+  {
+    "key": "count-cache",
+    "label": "Count Cache",
+    "group": "The cast"
+  },
+  {
+    "key": "toast-rider",
+    "label": "Toast Rider",
+    "group": "The cast"
   }
 ]

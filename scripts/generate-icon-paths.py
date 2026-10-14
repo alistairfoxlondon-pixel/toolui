@@ -66,8 +66,11 @@ def build(fill):
     return out
 
 
-outline = build(0)
-filled = {k: v for k, v in build(1).items() if k in FILLED}
+# These names render the project's original illustrated icons instead.
+import re
+illustrated = set(re.findall(r'^    ([a-z_]+):', (ROOT / 'resources/js/illustrated-icons.js').read_text(), re.M))
+outline = {k: v for k, v in build(0).items() if k not in illustrated or k == 'explore'}
+filled = {k: v for k, v in build(1).items() if k in FILLED and k not in illustrated and v != outline.get(k)}
 print(f"outline: {len(outline)}, filled: {len(filled)}")
 
 

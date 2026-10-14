@@ -20,19 +20,6 @@ use RuntimeException;
 
 class PostController extends Controller
 {
-    private array $postRelations = [
-        'author:id,name,username,bio,profession,skills,website,avatar_path,avatar_choice,is_admin',
-        'votes:id,post_id,user_id,option_index',
-        'launchVotes:id,post_id,user_id,vote',
-        'likes:id',
-        'reactions:id,post_id,user_id,reaction',
-        'sourcePost.author:id,name,username,bio,profession,skills,website,avatar_path,avatar_choice,is_admin',
-        'sourcePost.votes:id,post_id,user_id,option_index',
-        'sourcePost.launchVotes:id,post_id,user_id,vote',
-        'sourcePost.likes:id',
-        'sourcePost.reactions:id,post_id,user_id,reaction',
-    ];
-
     public function index(Request $request): JsonResponse
     {
         $query = Post::query()
@@ -42,7 +29,7 @@ class PostController extends Controller
                 $query->where('type', '!=', 'repost')
                     ->orWhereHas('sourcePost', fn ($source) => $source->where('type', '!=', 'model')->where('is_hidden', false)->whereHas('author', fn ($author) => $author->where('is_active', true)));
             })
-            ->with($this->postRelations)
+            ->with(PostPresenter::relations($request->user()))
             ->withCount(['comments', 'likes', 'reposts']);
 
         $type = $request->query('type');
@@ -55,6 +42,18 @@ class PostController extends Controller
         return response()->json([
             'data' => $posts->map(fn (Post $post) => PostPresenter::format($post, $request->user()))->values(),
         ]);
+    }
+
+    public function show(Request $request, Post $post): JsonResponse
+    {
+        $this->ensureAvailable($post);
+        if ($post->type === 'repost') {
+            abort_unless($post->sourcePost, 404);
+            $this->ensureAvailable($post->sourcePost);
+        }
+        $post->load(PostPresenter::relations($request->user()))->loadCount(['comments', 'likes', 'reposts']);
+
+        return response()->json(['post' => PostPresenter::format($post, $request->user())]);
     }
 
     public function store(Request $request): JsonResponse
@@ -75,12 +74,12 @@ class PostController extends Controller
             'model_access' => ['prohibited'],
             'seo_description' => $type === 'launch' ? ['nullable', 'string', 'max:160'] : ['prohibited'],
             'project_url' => $type === 'launch'
-                ? ['required', 'url', 'max:2048']
-                : ['nullable', 'url', 'max:2048'],
+                ? ['required', 'url:http,https', 'max:2048']
+                : ['nullable', 'url:http,https', 'max:2048'],
             'options' => $type === 'poll'
                 ? ['required', 'array', 'min:2', 'max:8']
                 : ['nullable', 'array', 'max:8'],
-            'options.*' => ['required', 'string', 'max:100'],
+            'options.*' => ['required', 'string', 'distinct:ignore_case', 'max:80'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:5120'],
             'logo' => ['nullable', 'file', 'mimes:svg,jpg,jpeg,png,webp', 'max:2048'],
         ]);
@@ -104,17 +103,15 @@ class PostController extends Controller
             'title' => $data['title'] ?? null,
             'seo_description' => $data['seo_description'] ?? null,
             'body' => $data['body'] ?? null,
-            'category' => $data['type'] === 'model' ? ($data['category'] ?? 'AI models') : ($data['category'] ?? null),
+            'category' => $data['category'] ?? null,
             'launch_category' => $data['type'] === 'launch' ? ($data['launch_category'] ?? 'other') : null,
-            'model_provider' => $data['type'] === 'model' ? ($data['model_provider'] ?? null) : null,
-            'model_access' => $data['type'] === 'model' ? ($data['model_access'] ?? 'free') : null,
-            'project_url' => in_array($data['type'], ['launch', 'model'], true) ? ($data['project_url'] ?? null) : null,
+            'project_url' => $data['type'] === 'launch' ? ($data['project_url'] ?? null) : null,
             'image_path' => $imagePath,
             'logo_path' => $logoPath,
             'options' => $data['type'] === 'poll' ? array_values($data['options']) : null,
         ]);
 
-        $post->load($this->postRelations)->loadCount(['comments', 'likes', 'reposts']);
+        $post->load(PostPresenter::relations($request->user()))->loadCount(['comments', 'likes', 'reposts']);
 
         return response()->json([
             'post' => PostPresenter::format($post, $request->user()),
@@ -277,7 +274,7 @@ class PostController extends Controller
             'source_post_id' => $original->id,
             'body' => $data['body'] ?? null,
         ]);
-        $repost->load($this->postRelations)->loadCount(['comments', 'likes', 'reposts']);
+        $repost->load(PostPresenter::relations($request->user()))->loadCount(['comments', 'likes', 'reposts']);
 
         return response()->json(['post' => PostPresenter::format($repost, $request->user())], 201);
     }

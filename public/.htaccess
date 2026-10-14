@@ -47,3 +47,11 @@
     Header set X-Frame-Options "SAMEORIGIN"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
+
+# Vite fingerprints these files: a changed build gets a new URL. Do not apply
+# immutable caching to HTML, authenticated JSON, or unfingerprinted uploads.
+<IfModule mod_headers.c>
+    <FilesMatch "-[A-Za-z0-9_-]{8,}\.(css|js|woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+</IfModule>

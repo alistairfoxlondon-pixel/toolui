@@ -70,6 +70,7 @@
                 'email' => auth()->user()->email,
                 'bio' => auth()->user()->bio,
                 'profession' => auth()->user()->profession,
+                'website' => auth()->user()->website,
                 'skills' => auth()->user()->skills ?? [],
                 'avatarChoice' => auth()->user()->avatar_choice,
                 'coverChoice' => \App\Support\CoverLibrary::valid(auth()->user()->cover_choice),

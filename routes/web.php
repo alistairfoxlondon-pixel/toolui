@@ -47,6 +47,7 @@ Route::middleware(['guest', 'throttle:12,1'])->prefix('auth')->name('social.')->
 });
 
 Route::get('/api/models', [AiModelController::class, 'index'])->name('api.models');
+Route::get('/api/posts/{post}', [PostController::class, 'show'])->name('api.posts.show');
 Route::get('/api/feed', [PostController::class, 'index'])->name('api.feed');
 Route::get('/api/search', [ProfileController::class, 'search'])->name('api.search');
 Route::get('/api/users/{username}', [ProfileController::class, 'show'])->name('api.users.show');
